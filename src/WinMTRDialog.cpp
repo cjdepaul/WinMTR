@@ -159,6 +159,8 @@ BEGIN_MESSAGE_MAP(WinMTRDialog, CDialog)
 	ON_WM_PAINT()
 	ON_WM_SIZE()
 	ON_WM_SIZING()
+	ON_WM_CTLCOLOR()
+	ON_WM_SETTINGCHANGE()
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(ID_RESTART, OnRestart)
 	ON_BN_CLICKED(ID_OPTIONS, OnOptions)
@@ -173,6 +175,7 @@ BEGIN_MESSAGE_MAP(WinMTRDialog, CDialog)
 	ON_WM_TIMER()
 	ON_WM_CLOSE()
 	ON_BN_CLICKED(IDCANCEL, &WinMTRDialog::OnBnClickedCancel)
+	ON_BN_CLICKED(IDC_CHECK_IPV6, &WinMTRDialog::OnBnClickedCheckIpv6)
 END_MESSAGE_MAP()
 
 
@@ -230,6 +233,8 @@ void WinMTRDialog::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_STATICJ, m_staticJ);
 	DDX_Control(pDX, ID_EXPH, m_buttonExpH);
 	DDX_Control(pDX, ID_EXPT, m_buttonExpT);
+	DDX_Control(pDX, ID_CTTC, m_buttonCopyText);
+	DDX_Control(pDX, ID_CHTC, m_buttonCopyHtml);
 }
 
 
@@ -254,6 +259,8 @@ BOOL WinMTRDialog::OnInitDialog()
 	
 	SetTimer(1, WINMTR_DIALOG_TIMER, NULL);
 	SetWindowText(caption);
+	WinMTRRefreshTheme();
+	WinMTRApplyThemeToWindow(this);
 	
 	SetIcon(m_hIcon, TRUE);
 	SetIcon(m_hIcon, FALSE);
@@ -278,6 +285,20 @@ BOOL WinMTRDialog::OnInitDialog()
 	
 	for(int i = 0; i< MTR_NR_COLS; i++)
 		m_listMTR.InsertColumn(i, MTR_COLS[i], LVCFMT_LEFT, MTR_COL_LENGTH[i] , -1);
+	CHeaderCtrl* header = m_listMTR.GetHeaderCtrl();
+	if(header && ::IsWindow(header->GetSafeHwnd())) {
+		for(int i = 0; i < header->GetItemCount(); ++i) {
+			HDITEM item = {0};
+			item.mask = HDI_FORMAT;
+			header->GetItem(i, &item);
+			item.fmt |= HDF_OWNERDRAW;
+			header->SetItem(i, &item);
+		}
+		m_listHeader.SubclassWindow(header->GetSafeHwnd());
+	}
+	WinMTRApplyThemeToChildren(this);
+	m_comboHost.RefreshTheme();
+	WinMTRConfigureListCtrl(m_listMTR);
 		
 	m_comboHost.SetFocus();
 	
@@ -509,6 +530,24 @@ void WinMTRDialog::OnPaint()
 HCURSOR WinMTRDialog::OnQueryDragIcon()
 {
 	return (HCURSOR) m_hIcon;
+}
+
+HBRUSH WinMTRDialog::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+	HBRUSH brush = WinMTRHandleCtlColor(pDC, pWnd, nCtlColor);
+	if(brush) return brush;
+	return CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+}
+
+void WinMTRDialog::OnSettingChange(UINT uFlags, LPCTSTR lpszSection)
+{
+	CDialog::OnSettingChange(uFlags, lpszSection);
+	WinMTRRefreshTheme();
+	WinMTRApplyThemeToWindow(this);
+	WinMTRApplyThemeToChildren(this);
+	m_comboHost.RefreshTheme();
+	WinMTRConfigureListCtrl(m_listMTR);
+	Invalidate(TRUE);
 }
 
 
@@ -1128,6 +1167,14 @@ void WinMTRDialog::ClearHistory()
 
 void WinMTRDialog::OnCbnSelendokComboHost()
 {
+}
+
+void WinMTRDialog::OnBnClickedCheckIpv6()
+{
+	UINT state = m_checkIPv6.GetCheck();
+	if(state == BST_UNCHECKED) m_checkIPv6.SetCheck(BST_CHECKED);
+	else if(state == BST_CHECKED) m_checkIPv6.SetCheck(BST_INDETERMINATE);
+	else m_checkIPv6.SetCheck(BST_UNCHECKED);
 }
 
 

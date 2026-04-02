@@ -13,6 +13,7 @@
 #ifndef WINMTROPTIONS_H_
 #define WINMTROPTIONS_H_
 
+#include "WinMTRThemedButton.h"
 
 
 //*****************************************************************************
@@ -36,7 +37,7 @@ public:
 	CEdit	m_editSize;
 	CEdit	m_editInterval;
 	CEdit	m_editMaxLRU;
-	CButton	m_checkDNS;
+	WinMTRThemedButton	m_checkDNS;
 	
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);
@@ -45,6 +46,9 @@ protected:
 	virtual void OnOK();
 	
 	afx_msg void OnLicense();
+	afx_msg void OnBnClickedCheckDns();
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	afx_msg void OnSettingChange(UINT uFlags, LPCTSTR lpszSection);
 	
 	DECLARE_MESSAGE_MAP()
 	

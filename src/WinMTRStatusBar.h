@@ -79,6 +79,7 @@ public:
 	virtual ~WinMTRStatusBar();
 	
 protected:
+	CBrush m_backgroundBrush;
 
 	struct _STATUSBAR_PANE_ {
 		_STATUSBAR_PANE_()
@@ -118,6 +119,8 @@ protected:
 protected:
 	//{{AFX_MSG(WinMTRStatusBar)
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+	afx_msg void OnPaint();
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 	virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam);

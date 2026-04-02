@@ -8,7 +8,6 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#include <vector>
 #include <windns.h>
 
 #pragma comment(lib, "Dnsapi.lib")
@@ -137,24 +136,11 @@ WinMTRNet::WinMTRNet(WinMTRDialog* wp)
 		AfxMessageBox("Failed initializing windows sockets library!");
 		return;
 	}
-	OSVERSIONINFOEX osvi= {0};
-	osvi.dwOSVersionInfoSize=sizeof(OSVERSIONINFOEX);
-	if(!GetVersionEx((OSVERSIONINFO*) &osvi)) {
-		AfxMessageBox("Failed to get Windows version!");
+
+	hICMP_DLL=LoadLibrary(_T("Iphlpapi.dll"));
+	if(!hICMP_DLL) {
+		AfxMessageBox("Failed: Unable to locate Iphlpapi.dll!");
 		return;
-	}
-	if(osvi.dwMajorVersion==5 && osvi.dwMinorVersion==0) { //w2k
-		hICMP_DLL=LoadLibrary(_T("ICMP.DLL"));
-		if(!hICMP_DLL) {
-			AfxMessageBox("Failed: Unable to locate ICMP.DLL!");
-			return;
-		}
-	} else {
-		hICMP_DLL=LoadLibrary(_T("Iphlpapi.dll"));
-		if(!hICMP_DLL) {
-			AfxMessageBox("Failed: Unable to locate Iphlpapi.dll!");
-			return;
-		}
 	}
 	
 	/*

@@ -17,6 +17,9 @@
 
 #include "WinMTRStatusBar.h"
 #include "WinMTRNet.h"
+#include "WinMTRThemedButton.h"
+#include "WinMTRThemedComboBox.h"
+#include "WinMTRThemedHeaderCtrl.h"
 #include "afxlinkctrl.h"
 #include <string>
 
@@ -57,19 +60,22 @@ public:
 		STOPPING_TO_EXIT
 	};
 	
-	CButton	m_buttonOptions;
-	CButton	m_buttonExit;
-	CButton	m_buttonStart;
-	CComboBox m_comboHost;
-	CButton m_checkIPv6;
+	WinMTRThemedButton	m_buttonOptions;
+	WinMTRThemedButton	m_buttonExit;
+	WinMTRThemedButton	m_buttonStart;
+	WinMTRThemedComboBox m_comboHost;
+	WinMTRThemedButton m_checkIPv6;
 	CListCtrl m_listMTR;
 	CMFCLinkCtrl m_buttonAppnor;
 	
 	CStatic	m_staticS;
 	CStatic	m_staticJ;
 	
-	CButton	m_buttonExpT;
-	CButton	m_buttonExpH;
+	WinMTRThemedButton	m_buttonExpT;
+	WinMTRThemedButton	m_buttonExpH;
+	WinMTRThemedButton	m_buttonCopyText;
+	WinMTRThemedButton	m_buttonCopyHtml;
+	WinMTRThemedHeaderCtrl m_listHeader;
 	
 	int InitMTRNet();
 	int ResolveTarget(const char* hostname, addrinfo** result, bool showErrors = true);
@@ -115,6 +121,8 @@ protected:
 	afx_msg void OnSize(UINT, int, int);
 	afx_msg void OnSizing(UINT, LPRECT);
 	afx_msg HCURSOR OnQueryDragIcon();
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	afx_msg void OnSettingChange(UINT uFlags, LPCTSTR lpszSection);
 	afx_msg void OnRestart();
 	afx_msg void OnOptions();
 	virtual void OnCancel();
@@ -130,6 +138,7 @@ protected:
 public:
 	afx_msg void OnCbnSelchangeComboHost();
 	afx_msg void OnCbnSelendokComboHost();
+	afx_msg void OnBnClickedCheckIpv6();
 private:
 	void ClearHistory();
 public:

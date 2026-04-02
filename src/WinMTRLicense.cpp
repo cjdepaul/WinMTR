@@ -364,6 +364,8 @@ Public License instead of this License."
 //
 //*****************************************************************************
 BEGIN_MESSAGE_MAP(WinMTRLicense, CDialog)
+	ON_WM_CTLCOLOR()
+	ON_WM_SETTINGCHANGE()
 END_MESSAGE_MAP()
 
 
@@ -396,6 +398,9 @@ void WinMTRLicense::DoDataExchange(CDataExchange* pDX)
 BOOL WinMTRLicense::OnInitDialog()
 {
 	CDialog::OnInitDialog();
+	WinMTRRefreshTheme();
+	WinMTRApplyThemeToWindow(this);
+	WinMTRApplyThemeToChildren(this);
 	/*
 	m_editLicense.SetSel(-1, -1);
 	m_editLicense.ReplaceSel(LICENCE_TEXT_1);
@@ -403,5 +408,21 @@ BOOL WinMTRLicense::OnInitDialog()
 	m_editLicense.ReplaceSel(LICENCE_TEXT_2);
 	*/
 	return FALSE;
+}
+
+HBRUSH WinMTRLicense::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+	HBRUSH brush = WinMTRHandleCtlColor(pDC, pWnd, nCtlColor);
+	if(brush) return brush;
+	return CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+}
+
+void WinMTRLicense::OnSettingChange(UINT uFlags, LPCTSTR lpszSection)
+{
+	CDialog::OnSettingChange(uFlags, lpszSection);
+	WinMTRRefreshTheme();
+	WinMTRApplyThemeToWindow(this);
+	WinMTRApplyThemeToChildren(this);
+	Invalidate(TRUE);
 }
 

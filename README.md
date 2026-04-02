@@ -21,15 +21,17 @@ this should improve performance and reduces network load* <br>
 - `[ ]` * new icon <br>
 
 ### Requirements
-* Windows XP+ *(Windows 2000 support can be added on request, but IPv6 will not work)*
-* Microsoft Visual C++ 2010 Redistributables
-([32bit](http://microsoft.com/en-us/download/details.aspx?id=5555) |
-[64bit](http://microsoft.com/en-us/download/details.aspx?id=14632)) or use static build
+* Windows 7 or newer
+* Microsoft Visual Studio with MFC support for local builds
+* A modern Windows SDK and C++ toolset
 
 ### CLI usage
 WinMTR now defaults to CLI mode when you launch it from the command line with a target host. Use `--gui` if you want to force the desktop window instead.
 
 ```text
+WinMTR.exe bgp.tools
+WinMTR.exe bgp.tools -4
+WinMTR.exe bgp.tools -6
 WinMTR.exe --report-cycles 10 1.1.1.1
 WinMTR.exe --report-seconds 30 --numeric example.com
 WinMTR.exe --gui example.com
@@ -46,7 +48,9 @@ Supported CLI options include:
 - `-4`, `--ipv4`
 - `-6`, `--ipv6`
 
-CLI and exported reports now include per-hop ASN data when it can be resolved.
+CLI mode runs live by default and refreshes continuously until you stop it with `Ctrl+C`.
+
+CLI and exported reports include per-hop ASN data when it can be resolved.
 
 ### About me / why I decided to create this fork
 There isn't that much to say actually, I've been using IPv6 for a few years now thanks to [**SixXS**](http://sixxs.net/)

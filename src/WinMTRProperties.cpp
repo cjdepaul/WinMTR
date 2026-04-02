@@ -20,6 +20,8 @@ static char THIS_FILE[] = __FILE__;
 // 
 //*****************************************************************************
 BEGIN_MESSAGE_MAP(WinMTRProperties, CDialog)
+	ON_WM_CTLCOLOR()
+	ON_WM_SETTINGCHANGE()
 END_MESSAGE_MAP()
 
 
@@ -64,6 +66,9 @@ void WinMTRProperties::DoDataExchange(CDataExchange* pDX)
 BOOL WinMTRProperties::OnInitDialog() 
 {
 	CDialog::OnInitDialog();
+	WinMTRRefreshTheme();
+	WinMTRApplyThemeToWindow(this);
+	WinMTRApplyThemeToChildren(this);
 	char buf[255];
 	
 	m_editIP.SetWindowText(ip);
@@ -87,5 +92,21 @@ BOOL WinMTRProperties::OnInitDialog()
 	m_editAvrg.SetWindowText(buf);
 
 	return FALSE;
+}
+
+HBRUSH WinMTRProperties::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+	HBRUSH brush = WinMTRHandleCtlColor(pDC, pWnd, nCtlColor);
+	if(brush) return brush;
+	return CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+}
+
+void WinMTRProperties::OnSettingChange(UINT uFlags, LPCTSTR lpszSection)
+{
+	CDialog::OnSettingChange(uFlags, lpszSection);
+	WinMTRRefreshTheme();
+	WinMTRApplyThemeToWindow(this);
+	WinMTRApplyThemeToChildren(this);
+	Invalidate(TRUE);
 }
 

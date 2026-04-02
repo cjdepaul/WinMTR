@@ -28,6 +28,8 @@
 #include <afxcmn.h>
 #endif
 #include <afxsock.h>
+#include <uxtheme.h>
+#include <dwmapi.h>
 #include <Iphlpapi.h>//IP_OPTION_INFORMATION32
 #include <ws2tcpip.h>//sockaddr_in6
 
@@ -102,6 +104,21 @@ const int MTR_COL_LENGTH[ MTR_NR_COLS ] = {
 	249, 30, 50, 40, 40, 50, 50, 50, 50
 };
 
+struct WinMTRThemeColors {
+	COLORREF windowBackground;
+	COLORREF controlBackground;
+	COLORREF textColor;
+	COLORREF mutedTextColor;
+	COLORREF listBackground;
+};
+
 int gettimeofday(struct timeval* tv, struct timezone* tz);
+void WinMTRRefreshTheme();
+bool WinMTRIsDarkModeEnabled();
+const WinMTRThemeColors& WinMTRGetThemeColors();
+HBRUSH WinMTRHandleCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+void WinMTRApplyThemeToWindow(CWnd* window);
+void WinMTRApplyThemeToChildren(CWnd* parent);
+void WinMTRConfigureListCtrl(CListCtrl& list);
 
 #endif // ifndef GLOBAL_H_

@@ -22,8 +22,7 @@ struct WinMTRCommandLineOptions {
 		  cliMode(false),
 		  forceGui(false),
 		  reportCycles(0),
-		  reportDurationSeconds(0),
-		  useASNLookup(true)
+		  reportDurationSeconds(0)
 	{
 	}
 
@@ -32,7 +31,6 @@ struct WinMTRCommandLineOptions {
 	bool forceGui;
 	int reportCycles;
 	int reportDurationSeconds;
-	bool useASNLookup;
 	std::string hostName;
 };
 

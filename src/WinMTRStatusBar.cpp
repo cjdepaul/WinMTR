@@ -29,6 +29,8 @@ WinMTRStatusBar::~WinMTRStatusBar()
 BEGIN_MESSAGE_MAP(WinMTRStatusBar, CStatusBar)
 	//{{AFX_MSG_MAP(WinMTRStatusBar)
 	ON_WM_CREATE()
+	ON_WM_PAINT()
+	ON_WM_ERASEBKGND()
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -41,8 +43,49 @@ int WinMTRStatusBar::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if(CStatusBar::OnCreate(lpCreateStruct) == -1)
 		return -1;
-		
+
+	m_backgroundBrush.CreateSolidBrush(WinMTRGetThemeColors().windowBackground);
 	return 0;
+}
+
+void WinMTRStatusBar::OnPaint()
+{
+	if(!WinMTRIsDarkModeEnabled()) {
+		Default();
+		return;
+	}
+
+	CPaintDC dc(this);
+	const WinMTRThemeColors& colors = WinMTRGetThemeColors();
+	CRect clientRect;
+	GetClientRect(&clientRect);
+	dc.FillSolidRect(clientRect, colors.windowBackground);
+	dc.SetBkMode(TRANSPARENT);
+	dc.SetTextColor(colors.textColor);
+
+	for(int i = 0; i < m_nCount; ++i) {
+		CRect paneRect;
+		GetItemRect(i, &paneRect);
+		dc.FillSolidRect(paneRect, colors.windowBackground);
+		dc.Draw3dRect(paneRect, RGB(70, 70, 70), RGB(70, 70, 70));
+
+		CString paneText;
+		GetPaneText(i, paneText);
+		paneRect.DeflateRect(4, 1);
+		dc.DrawText(paneText, paneRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+	}
+}
+
+BOOL WinMTRStatusBar::OnEraseBkgnd(CDC* pDC)
+{
+	if(!WinMTRIsDarkModeEnabled()) {
+		return CStatusBar::OnEraseBkgnd(pDC);
+	}
+
+	CRect clientRect;
+	GetClientRect(&clientRect);
+	pDC->FillSolidRect(clientRect, WinMTRGetThemeColors().windowBackground);
+	return TRUE;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -22,6 +22,9 @@ static char THIS_FILE[] = __FILE__;
 //*****************************************************************************
 BEGIN_MESSAGE_MAP(WinMTROptions, CDialog)
 	ON_BN_CLICKED(ID_LICENSE, OnLicense)
+	ON_BN_CLICKED(IDC_CHECK_DNS, OnBnClickedCheckDns)
+	ON_WM_CTLCOLOR()
+	ON_WM_SETTINGCHANGE()
 END_MESSAGE_MAP()
 
 
@@ -48,6 +51,9 @@ void WinMTROptions::DoDataExchange(CDataExchange* pDX)
 BOOL WinMTROptions::OnInitDialog() 
 {
 	CDialog::OnInitDialog();
+	WinMTRRefreshTheme();
+	WinMTRApplyThemeToWindow(this);
+	WinMTRApplyThemeToChildren(this);
 	
 	char strtmp[20];
 	
@@ -99,4 +105,25 @@ void WinMTROptions::OnLicense()
 {
 	WinMTRLicense mtrlicense;
 	mtrlicense.DoModal();
+}
+
+void WinMTROptions::OnBnClickedCheckDns()
+{
+	m_checkDNS.SetCheck(m_checkDNS.GetCheck() == BST_CHECKED ? BST_UNCHECKED : BST_CHECKED);
+}
+
+HBRUSH WinMTROptions::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+	HBRUSH brush = WinMTRHandleCtlColor(pDC, pWnd, nCtlColor);
+	if(brush) return brush;
+	return CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+}
+
+void WinMTROptions::OnSettingChange(UINT uFlags, LPCTSTR lpszSection)
+{
+	CDialog::OnSettingChange(uFlags, lpszSection);
+	WinMTRRefreshTheme();
+	WinMTRApplyThemeToWindow(this);
+	WinMTRApplyThemeToChildren(this);
+	Invalidate(TRUE);
 }

@@ -1,0 +1,17 @@
+WinMTR (Redux) command line usage:
+  WinMTR.exe [options] host
+
+Options:
+  -h, --help               Show this help text.
+  -g, --gui                Force the GUI even when a host is provided.
+  -r, --report             Run without the GUI in live terminal mode.
+  -c, --report-cycles N    Stop after N report intervals.
+  -w, --report-seconds N   Stop after N seconds.
+  -i, --interval SECONDS   Probe interval.
+  -s, --size BYTES         ICMP payload size.
+  -n, --numeric            Do not perform reverse DNS lookups.
+  -4, --ipv4               Force IPv4.
+  -6, --ipv6               Force IPv6.
+
+CLI mode refreshes continuously until Ctrl+C by default.
+CLI reports include per-hop ASN lookup when available.
