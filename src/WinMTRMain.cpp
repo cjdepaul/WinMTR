@@ -64,7 +64,10 @@ WinMTRMain::WinMTRMain()
 //*****************************************************************************
 BOOL WinMTRMain::InitInstance()
 {
-	INITCOMMONCONTROLSEX icex= {sizeof(INITCOMMONCONTROLSEX),ICC_STANDARD_CLASSES};
+	INITCOMMONCONTROLSEX icex = {
+		sizeof(INITCOMMONCONTROLSEX),
+		ICC_STANDARD_CLASSES | ICC_LISTVIEW_CLASSES | ICC_BAR_CLASSES | ICC_LINK_CLASS
+	};
 	InitCommonControlsEx(&icex);
 	if(!AfxSocketInit()) {
 		AfxMessageBox(IDP_SOCKETS_INIT_FAILED);
@@ -210,6 +213,18 @@ bool WinMTRMain::SetupConsole() const
 			return false;
 		}
 	}
+
+	HANDLE conOut = CreateFileA("CONOUT$", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+	if(conOut != INVALID_HANDLE_VALUE) {
+		SetStdHandle(STD_OUTPUT_HANDLE, conOut);
+		SetStdHandle(STD_ERROR_HANDLE, conOut);
+	}
+
+	HANDLE conIn = CreateFileA("CONIN$", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+	if(conIn != INVALID_HANDLE_VALUE) {
+		SetStdHandle(STD_INPUT_HANDLE, conIn);
+	}
+
 	output = GetStdHandle(STD_OUTPUT_HANDLE);
 	return output != NULL && output != INVALID_HANDLE_VALUE;
 }

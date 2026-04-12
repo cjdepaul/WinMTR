@@ -9,6 +9,7 @@
 #include "WinMTROptions.h"
 #include "WinMTRProperties.h"
 #include "WinMTRNet.h"
+#include <iomanip>
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -52,6 +53,75 @@ static std::string HtmlEscape(const char* value)
 	return escaped;
 }
 
+static std::string PadCell(const std::string& value, size_t width, bool rightAlign = false)
+{
+	if(width == 0) return "";
+	std::string text = value;
+	if(text.length() > width) {
+		text = text.substr(0, width);
+	}
+	if(text.length() < width) {
+		size_t padding = width - text.length();
+		if(rightAlign) text.insert(0, padding, ' ');
+		else text.append(padding, ' ');
+	}
+	return text;
+}
+
+static std::string CenterCell(const std::string& value, size_t width)
+{
+	if(width == 0) return "";
+	std::string text = value;
+	if(text.length() > width) {
+		text = text.substr(0, width);
+	}
+	if(text.length() < width) {
+		size_t padding = width - text.length();
+		size_t left = padding / 2;
+		size_t right = padding - left;
+		text.insert(0, left, ' ');
+		text.append(right, ' ');
+	}
+	return text;
+}
+
+static std::string BuildCliSeparator(char fill)
+{
+	static const size_t widths[] = {57, 10, 4, 4, 4, 4, 4, 4, 4};
+	std::ostringstream row;
+	row << '|';
+	for(size_t i = 0; i < sizeof(widths) / sizeof(widths[0]); ++i) {
+		row << std::string(widths[i] + 2, fill) << '|';
+	}
+	row << "\r\n";
+	return row.str();
+}
+
+static std::string BuildCliRow(
+	const std::string& host,
+	const std::string& asn,
+	int loss,
+	int sent,
+	int recv,
+	int best,
+	int avrg,
+	int wrst,
+	int last)
+{
+	std::ostringstream row;
+	row << "| " << PadCell(host, 57, false)
+		<< " | " << PadCell(asn, 10, false)
+		<< " | " << PadCell(std::to_string(loss), 4, true)
+		<< " | " << PadCell(std::to_string(sent), 4, true)
+		<< " | " << PadCell(std::to_string(recv), 4, true)
+		<< " | " << PadCell(std::to_string(best), 4, true)
+		<< " | " << PadCell(std::to_string(avrg), 4, true)
+		<< " | " << PadCell(std::to_string(wrst), 4, true)
+		<< " | " << PadCell(std::to_string(last), 4, true)
+		<< " |\r\n";
+	return row.str();
+}
+
 struct cli_trace_thread {
 	WinMTRDialog* dialog;
 	sockaddr_storage address;
@@ -59,6 +129,10 @@ struct cli_trace_thread {
 };
 
 static volatile LONG g_cliStopRequested = 0;
+static bool g_cliUsingAltScreen = false;
+static bool g_cliUsingVirtualTerminal = false;
+static bool g_cliSavedInputMode = false;
+static DWORD g_cliOriginalInputMode = 0;
 
 static BOOL WINAPI CliConsoleHandler(DWORD signal)
 {
@@ -84,8 +158,82 @@ static void WriteCliOutput(const char* text)
 	WriteFile(output, text, (DWORD)strlen(text), &written, NULL);
 }
 
+static bool EnableCliVirtualTerminal()
+{
+	HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
+	if(output == NULL || output == INVALID_HANDLE_VALUE) return false;
+
+	DWORD outputMode = 0;
+	if(!GetConsoleMode(output, &outputMode)) return false;
+	if((outputMode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) == 0) {
+		if(!SetConsoleMode(output, outputMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
+			return false;
+		}
+	}
+
+	g_cliUsingVirtualTerminal = true;
+	return true;
+}
+
+static void BeginCliInputSession()
+{
+	HANDLE input = GetStdHandle(STD_INPUT_HANDLE);
+	if(input == NULL || input == INVALID_HANDLE_VALUE) return;
+
+	DWORD inputMode = 0;
+	if(!GetConsoleMode(input, &inputMode)) return;
+
+	g_cliOriginalInputMode = inputMode;
+	g_cliSavedInputMode = true;
+
+	DWORD liveMode = inputMode;
+	liveMode &= ~ENABLE_PROCESSED_INPUT;
+	liveMode |= ENABLE_EXTENDED_FLAGS;
+	SetConsoleMode(input, liveMode);
+}
+
+static void EndCliInputSession()
+{
+	if(!g_cliSavedInputMode) return;
+
+	HANDLE input = GetStdHandle(STD_INPUT_HANDLE);
+	if(input != NULL && input != INVALID_HANDLE_VALUE) {
+		SetConsoleMode(input, g_cliOriginalInputMode);
+	}
+
+	g_cliSavedInputMode = false;
+	g_cliOriginalInputMode = 0;
+}
+
+static void BeginCliScreenSession()
+{
+	g_cliUsingAltScreen = false;
+	BeginCliInputSession();
+	if(!EnableCliVirtualTerminal()) return;
+	WriteCliOutput("\x1b[?1049h\x1b[?25l");
+	g_cliUsingAltScreen = true;
+}
+
+static void EndCliScreenSession()
+{
+	if(g_cliUsingVirtualTerminal) {
+		WriteCliOutput("\x1b[?25h");
+		if(g_cliUsingAltScreen) {
+			WriteCliOutput("\x1b[?1049l");
+		}
+	}
+	g_cliUsingAltScreen = false;
+	g_cliUsingVirtualTerminal = false;
+	EndCliInputSession();
+}
+
 static bool ClearCliScreen()
 {
+	if(g_cliUsingVirtualTerminal) {
+		WriteCliOutput("\x1b[H\x1b[2J");
+		return true;
+	}
+
 	HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
 	if(output == NULL || output == INVALID_HANDLE_VALUE) return false;
 
@@ -101,21 +249,85 @@ static bool ClearCliScreen()
 	return true;
 }
 
+static bool PollCliStopRequest()
+{
+	if(InterlockedCompareExchange(&g_cliStopRequested, 0, 0) != 0) {
+		return true;
+	}
+
+	if((GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0 && (GetAsyncKeyState('C') & 0x8000) != 0) {
+		InterlockedExchange(&g_cliStopRequested, 1);
+		return true;
+	}
+
+	HANDLE input = GetStdHandle(STD_INPUT_HANDLE);
+	if(input == NULL || input == INVALID_HANDLE_VALUE) {
+		return false;
+	}
+
+	DWORD eventCount = 0;
+	if(!GetNumberOfConsoleInputEvents(input, &eventCount) || eventCount == 0) {
+		return false;
+	}
+
+	INPUT_RECORD records[16];
+	DWORD recordsRead = 0;
+	while(eventCount > 0) {
+		DWORD batchSize = eventCount;
+		if(batchSize > (DWORD)(sizeof(records) / sizeof(records[0]))) {
+			batchSize = (DWORD)(sizeof(records) / sizeof(records[0]));
+		}
+		if(!ReadConsoleInput(input, records, batchSize, &recordsRead) || recordsRead == 0) {
+			break;
+		}
+		for(DWORD i = 0; i < recordsRead; ++i) {
+			const INPUT_RECORD& record = records[i];
+			if(record.EventType != KEY_EVENT) continue;
+			const KEY_EVENT_RECORD& key = record.Event.KeyEvent;
+			if(!key.bKeyDown) continue;
+			const DWORD ctrlState = key.dwControlKeyState;
+			const bool ctrlPressed = (ctrlState & (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED)) != 0;
+			if(ctrlPressed && (key.uChar.AsciiChar == 'c' || key.uChar.AsciiChar == 'C' || key.wVirtualKeyCode == 'C')) {
+				InterlockedExchange(&g_cliStopRequested, 1);
+				return true;
+			}
+			if(key.wVirtualKeyCode == VK_CANCEL) {
+				InterlockedExchange(&g_cliStopRequested, 1);
+				return true;
+			}
+		}
+		if(!GetNumberOfConsoleInputEvents(input, &eventCount)) {
+			break;
+		}
+	}
+
+	return InterlockedCompareExchange(&g_cliStopRequested, 0, 0) != 0;
+}
+
 static std::string BuildCliScreen(WinMTRDialog* dialog, const char* hostname, int cycles, int durationSeconds, DWORD elapsedMs)
 {
 	char host[255];
 	char asn[64];
-	char line[1024];
 	std::ostringstream screen;
 	int nh = dialog->wmtrnet->GetMax();
 	int currentCycle = dialog->wmtrnet->GetXmit(0);
 
 	screen << "WinMTR live report for " << hostname << "\r\n";
 	screen << "Press Ctrl+C to stop.\r\n\r\n";
-	screen << "|--------------------------------------------------------------------------------------------------------------|\r\n";
-	screen << "|                                               WinMTR statistics                                              |\r\n";
-	screen << "|                          Host                           - ASN        - %  | Sent | Recv | Best | Avrg | Wrst | Last |\r\n";
-	screen << "|---------------------------------------------------------|------------|----|------|------|------|------|------|------|\r\n";
+	screen << BuildCliSeparator('-');
+	screen << "| " << CenterCell("WinMTR statistics", 105) << " |\r\n";
+	screen << BuildCliSeparator('-');
+	screen << "| " << CenterCell("Host", 57)
+		   << " | " << CenterCell("ASN", 10)
+		   << " | " << CenterCell("%", 4)
+		   << " | " << CenterCell("Sent", 4)
+		   << " | " << CenterCell("Recv", 4)
+		   << " | " << CenterCell("Best", 4)
+		   << " | " << CenterCell("Avrg", 4)
+		   << " | " << CenterCell("Wrst", 4)
+		   << " | " << CenterCell("Last", 4)
+		   << " |\r\n";
+	screen << BuildCliSeparator('-');
 
 	for(int i = 0; i < nh; ++i) {
 		dialog->wmtrnet->GetName(i, host);
@@ -123,7 +335,7 @@ static std::string BuildCliScreen(WinMTRDialog* dialog, const char* hostname, in
 		dialog->wmtrnet->GetASN(i, asn);
 		if(strcmp(asn, "") == 0) strcpy(asn, "-");
 
-		sprintf(line, "|%57.57s | %-10.10s | %2d | %4d | %4d | %4d | %4d | %4d | %4d |\r\n",
+		screen << BuildCliRow(
 			host,
 			asn,
 			dialog->wmtrnet->GetPercent(i),
@@ -133,10 +345,9 @@ static std::string BuildCliScreen(WinMTRDialog* dialog, const char* hostname, in
 			dialog->wmtrnet->GetAvg(i),
 			dialog->wmtrnet->GetWorst(i),
 			dialog->wmtrnet->GetLast(i));
-		screen << line;
 	}
 
-	screen << "|_________________________________________________________|____________|____|______|______|______|______|______|______|\r\n";
+	screen << BuildCliSeparator('-');
 	screen << "   WinMTR v1.00 GPLv2 (original by Appnor MSP - Fully Managed Hosting & Cloud Provider)\r\n\r\n";
 
 	if(durationSeconds > 0) {
@@ -175,7 +386,6 @@ BEGIN_MESSAGE_MAP(WinMTRDialog, CDialog)
 	ON_WM_TIMER()
 	ON_WM_CLOSE()
 	ON_BN_CLICKED(IDCANCEL, &WinMTRDialog::OnBnClickedCancel)
-	ON_BN_CLICKED(IDC_CHECK_IPV6, &WinMTRDialog::OnBnClickedCheckIpv6)
 END_MESSAGE_MAP()
 
 
@@ -205,7 +415,6 @@ WinMTRDialog::WinMTRDialog(CWnd* pParent)
 	
 	traceThreadMutex = CreateMutex(NULL, FALSE, NULL);
 	wmtrnet = new WinMTRNet(this);
-	if(!wmtrnet->hasIPv6) m_checkIPv6.EnableWindow(FALSE);
 	useIPv6=2;
 }
 
@@ -297,8 +506,8 @@ BOOL WinMTRDialog::OnInitDialog()
 		m_listHeader.SubclassWindow(header->GetSafeHwnd());
 	}
 	WinMTRApplyThemeToChildren(this);
-	m_comboHost.RefreshTheme();
 	WinMTRConfigureListCtrl(m_listMTR);
+	if(!wmtrnet->hasIPv6) m_checkIPv6.EnableWindow(FALSE);
 		
 	m_comboHost.SetFocus();
 	
@@ -545,7 +754,6 @@ void WinMTRDialog::OnSettingChange(UINT uFlags, LPCTSTR lpszSection)
 	WinMTRRefreshTheme();
 	WinMTRApplyThemeToWindow(this);
 	WinMTRApplyThemeToChildren(this);
-	m_comboHost.RefreshTheme();
 	WinMTRConfigureListCtrl(m_listMTR);
 	Invalidate(TRUE);
 }
@@ -592,6 +800,7 @@ void WinMTRDialog::OnDblclkList(NMHDR* /*pNMHDR*/, LRESULT* pResult)
 		}
 	}
 }
+
 
 
 //*****************************************************************************
@@ -1064,23 +1273,26 @@ int WinMTRDialog::RunCliTrace(const char* hostname, int cycles, int durationSeco
 
 	LONG previousStopState = InterlockedExchange(&g_cliStopRequested, 0);
 	SetConsoleCtrlHandler(CliConsoleHandler, TRUE);
+	BeginCliScreenSession();
 
 	DWORD startTick = GetTickCount();
 	int lastRenderedCycle = -1;
 	bool running = true;
 	while(running) {
-		Sleep(1000);
+		for(int waited = 0; waited < 10 && running; ++waited) {
+			Sleep(100);
+			if(PollCliStopRequest()) {
+				running = false;
+			}
+		}
 		int currentCycle = wmtrnet->GetXmit(0);
 		DWORD elapsedMs = GetTickCount() - startTick;
 
 		std::string screen = BuildCliScreen(this, hostname, cycles, durationSeconds, elapsedMs);
-		if(ClearCliScreen()) {
-			WriteCliOutput(screen.c_str());
-		} else {
-			WriteCliOutput(screen.c_str());
-		}
+		ClearCliScreen();
+		WriteCliOutput(screen.c_str());
 
-		if(InterlockedCompareExchange(&g_cliStopRequested, 0, 0) != 0) {
+		if(PollCliStopRequest()) {
 			running = false;
 		} else if(durationSeconds > 0 && elapsedMs >= (DWORD)(durationSeconds * 1000)) {
 			running = false;
@@ -1093,6 +1305,7 @@ int WinMTRDialog::RunCliTrace(const char* hostname, int cycles, int durationSeco
 	wmtrnet->StopTrace();
 	WaitForSingleObject(worker, INFINITE);
 	CloseHandle(worker);
+	EndCliScreenSession();
 	SetConsoleCtrlHandler(CliConsoleHandler, FALSE);
 	InterlockedExchange(&g_cliStopRequested, previousStopState);
 
@@ -1168,15 +1381,6 @@ void WinMTRDialog::ClearHistory()
 void WinMTRDialog::OnCbnSelendokComboHost()
 {
 }
-
-void WinMTRDialog::OnBnClickedCheckIpv6()
-{
-	UINT state = m_checkIPv6.GetCheck();
-	if(state == BST_UNCHECKED) m_checkIPv6.SetCheck(BST_CHECKED);
-	else if(state == BST_CHECKED) m_checkIPv6.SetCheck(BST_INDETERMINATE);
-	else m_checkIPv6.SetCheck(BST_UNCHECKED);
-}
-
 
 void WinMTRDialog::OnCbnCloseupComboHost()
 {

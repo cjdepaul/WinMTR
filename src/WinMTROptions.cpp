@@ -22,7 +22,6 @@ static char THIS_FILE[] = __FILE__;
 //*****************************************************************************
 BEGIN_MESSAGE_MAP(WinMTROptions, CDialog)
 	ON_BN_CLICKED(ID_LICENSE, OnLicense)
-	ON_BN_CLICKED(IDC_CHECK_DNS, OnBnClickedCheckDns)
 	ON_WM_CTLCOLOR()
 	ON_WM_SETTINGCHANGE()
 END_MESSAGE_MAP()
@@ -105,11 +104,6 @@ void WinMTROptions::OnLicense()
 {
 	WinMTRLicense mtrlicense;
 	mtrlicense.DoModal();
-}
-
-void WinMTROptions::OnBnClickedCheckDns()
-{
-	m_checkDNS.SetCheck(m_checkDNS.GetCheck() == BST_CHECKED ? BST_UNCHECKED : BST_CHECKED);
 }
 
 HBRUSH WinMTROptions::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)

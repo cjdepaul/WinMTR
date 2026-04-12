@@ -123,10 +123,13 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <SubSystem>Windows</SubSystem>
       <OutputFile>.\Release_x32\WinMTR.exe</OutputFile>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <UACExecutionLevel>AsInvoker</UACExecutionLevel>
       <EnableUAC>false</EnableUAC>
       <UACUIAccess>true</UACUIAccess>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -162,10 +165,13 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <SubSystem>Windows</SubSystem>
       <OutputFile>.\Release_x64\WinMTR.exe</OutputFile>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <UACExecutionLevel>AsInvoker</UACExecutionLevel>
       <EnableUAC>false</EnableUAC>
       <UACUIAccess>true</UACUIAccess>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -257,6 +263,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WinMTRLicense.cpp" />
+    <ClCompile Include="WinMTRDarkHeaderCtrl.cpp" />
     <ClCompile Include="WinMTRStatusBar.cpp" />
     <ClCompile Include="WinMTRDialog.cpp" />
     <ClCompile Include="WinMTRGlobal.cpp" />
@@ -265,12 +272,10 @@
     <ClCompile Include="WinMTRNet.cpp" />
     <ClCompile Include="WinMTROptions.cpp" />
     <ClCompile Include="WinMTRProperties.cpp" />
-    <ClCompile Include="WinMTRThemedComboBox.cpp" />
-    <ClCompile Include="WinMTRThemedHeaderCtrl.cpp" />
-    <ClCompile Include="WinMTRThemedButton.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WinMTRLicense.h" />
+    <ClInclude Include="WinMTRDarkHeaderCtrl.h" />
     <ClInclude Include="WinMTRStatusBar.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
@@ -281,9 +286,6 @@
     <ClInclude Include="WinMTRNet.h" />
     <ClInclude Include="WinMTROptions.h" />
     <ClInclude Include="WinMTRProperties.h" />
-    <ClInclude Include="WinMTRThemedComboBox.h" />
-    <ClInclude Include="WinMTRThemedHeaderCtrl.h" />
-    <ClInclude Include="WinMTRThemedButton.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="WinMTR.ico" />

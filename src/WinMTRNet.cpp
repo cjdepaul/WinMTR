@@ -52,6 +52,18 @@ static int GetSockaddrLength(const sockaddr* addr)
 	return addr->sa_family == AF_INET6 ? sizeof(sockaddr_in6) : sizeof(sockaddr_in);
 }
 
+static void InterruptibleTraceSleep(WinMTRNet* winmtr, DWORD milliseconds)
+{
+	const DWORD sliceMs = 25;
+	DWORD slept = 0;
+	while(winmtr->tracing && slept < milliseconds) {
+		DWORD remaining = milliseconds - slept;
+		DWORD currentSlice = remaining < sliceMs ? remaining : sliceMs;
+		Sleep(currentSlice);
+		slept += currentSlice;
+	}
+}
+
 static std::string TrimCopy(const std::string& value)
 {
 	size_t start = value.find_first_not_of(" \t\r\n");
@@ -223,7 +235,7 @@ void WinMTRNet::DoTrace(sockaddr* sockaddr)
 			current->winmtr=this;
 			current->ttl=hops+1;
 			hThreads[hops]=(HANDLE)_beginthreadex(NULL,0,TraceThread6,current,0,NULL);
-			Sleep(30);
+			InterruptibleTraceSleep(this, 30);
 			if(++hops>this->GetMax()) break;
 		}
 	} else {
@@ -235,7 +247,7 @@ void WinMTRNet::DoTrace(sockaddr* sockaddr)
 			current->winmtr=this;
 			current->ttl=hops+1;
 			hThreads[hops]=(HANDLE)_beginthreadex(NULL,0,TraceThread,current,0,NULL);
-			Sleep(30);
+			InterruptibleTraceSleep(this, 30);
 			if(++hops>this->GetMax()) break;
 		}
 	}
@@ -295,14 +307,14 @@ unsigned WINAPI TraceThread(void* p)
 				wmtrnet->SetErrorName(current->ttl - 1, icmp_echo_reply.Status);
 			}
 			if((DWORD)(wmtrnet->wmtrdlg->interval * 1000) > icmp_echo_reply.RoundTripTime)
-				Sleep((DWORD)(wmtrnet->wmtrdlg->interval * 1000) - icmp_echo_reply.RoundTripTime);
+				InterruptibleTraceSleep(wmtrnet, (DWORD)(wmtrnet->wmtrdlg->interval * 1000) - icmp_echo_reply.RoundTripTime);
 		} else {
 			DWORD err=GetLastError();
 			wmtrnet->SetErrorName(current->ttl - 1, err);
 			switch(err) {
 			case IP_REQ_TIMED_OUT: break;
 			default:
-				Sleep((DWORD)(wmtrnet->wmtrdlg->interval * 1000));
+				InterruptibleTraceSleep(wmtrnet, (DWORD)(wmtrnet->wmtrdlg->interval * 1000));
 			}
 		}
 	}//end loop
@@ -350,14 +362,14 @@ unsigned WINAPI TraceThread6(void* p)
 				wmtrnet->SetErrorName(current->ttl - 1, icmpv6_echo_reply.Status);
 			}
 			if((DWORD)(wmtrnet->wmtrdlg->interval * 1000) > icmpv6_echo_reply.RoundTripTime)
-				Sleep((DWORD)(wmtrnet->wmtrdlg->interval * 1000) - icmpv6_echo_reply.RoundTripTime);
+				InterruptibleTraceSleep(wmtrnet, (DWORD)(wmtrnet->wmtrdlg->interval * 1000) - icmpv6_echo_reply.RoundTripTime);
 		} else {
 			DWORD err=GetLastError();
 			wmtrnet->SetErrorName(current->ttl - 1, err);
 			switch(err) {
 			case IP_REQ_TIMED_OUT: break;
 			default:
-				Sleep((DWORD)(wmtrnet->wmtrdlg->interval * 1000));
+				InterruptibleTraceSleep(wmtrnet, (DWORD)(wmtrnet->wmtrdlg->interval * 1000));
 			}
 		}
 	}//end loop

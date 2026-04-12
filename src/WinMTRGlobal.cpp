@@ -16,6 +16,36 @@ namespace {
 	CBrush g_controlBrush;
 	WinMTRThemeColors g_themeColors = { RGB(255, 255, 255), RGB(255, 255, 255), RGB(0, 0, 0), RGB(96, 96, 96), RGB(255, 255, 255) };
 
+	enum PreferredAppMode {
+		DefaultAppMode,
+		AllowDarkAppMode,
+		ForceDarkAppMode,
+		ForceLightAppMode,
+		MaxAppMode
+	};
+
+	typedef BOOL (WINAPI* AllowDarkModeForWindowFn)(HWND, BOOL);
+	typedef PreferredAppMode (WINAPI* SetPreferredAppModeFn)(PreferredAppMode);
+	typedef VOID (WINAPI* FlushMenuThemesFn)();
+
+	AllowDarkModeForWindowFn g_allowDarkModeForWindow = NULL;
+	SetPreferredAppModeFn g_setPreferredAppMode = NULL;
+	FlushMenuThemesFn g_flushMenuThemes = NULL;
+	bool g_nativeDarkModeInitialized = false;
+
+	void InitializeNativeDarkModeSupport()
+	{
+		if(g_nativeDarkModeInitialized) return;
+		g_nativeDarkModeInitialized = true;
+
+		HMODULE uxTheme = ::LoadLibraryW(L"uxtheme.dll");
+		if(!uxTheme) return;
+
+		g_allowDarkModeForWindow = reinterpret_cast<AllowDarkModeForWindowFn>(::GetProcAddress(uxTheme, MAKEINTRESOURCEA(133)));
+		g_setPreferredAppMode = reinterpret_cast<SetPreferredAppModeFn>(::GetProcAddress(uxTheme, MAKEINTRESOURCEA(135)));
+		g_flushMenuThemes = reinterpret_cast<FlushMenuThemesFn>(::GetProcAddress(uxTheme, MAKEINTRESOURCEA(136)));
+	}
+
 	bool QueryDarkModeSetting()
 	{
 		DWORD value = 1;
@@ -55,12 +85,54 @@ namespace {
 		g_windowBrush.CreateSolidBrush(g_themeColors.windowBackground);
 		g_controlBrush.CreateSolidBrush(g_darkModeEnabled ? g_themeColors.controlBackground : g_themeColors.listBackground);
 	}
+
+	void ApplyNativeDarkModePreference()
+	{
+		InitializeNativeDarkModeSupport();
+		if(g_setPreferredAppMode) {
+			g_setPreferredAppMode(g_darkModeEnabled ? AllowDarkAppMode : DefaultAppMode);
+		}
+		if(g_flushMenuThemes) {
+			g_flushMenuThemes();
+		}
+	}
+
+	void ApplyNativeThemeToControl(HWND hWnd)
+	{
+		if(!::IsWindow(hWnd)) return;
+		InitializeNativeDarkModeSupport();
+		if(g_allowDarkModeForWindow) {
+			g_allowDarkModeForWindow(hWnd, g_darkModeEnabled ? TRUE : FALSE);
+		}
+
+		char className[64] = {0};
+		::GetClassNameA(hWnd, className, sizeof(className));
+
+		LPCWSTR subAppName = NULL;
+		if(_stricmp(className, WC_LISTVIEWA) == 0) {
+			subAppName = g_darkModeEnabled ? L"Explorer" : NULL;
+		} else if(_stricmp(className, WC_HEADERA) == 0) {
+			subAppName = g_darkModeEnabled ? L"ItemsView" : NULL;
+		} else if(_stricmp(className, WC_COMBOBOXA) == 0 || _stricmp(className, "ComboBox") == 0 ||
+			_stricmp(className, WC_EDITA) == 0 || _stricmp(className, "Edit") == 0 ||
+			_stricmp(className, "ComboLBox") == 0) {
+			subAppName = g_darkModeEnabled ? L"CFD" : NULL;
+		} else if(_stricmp(className, WC_BUTTONA) == 0 || _stricmp(className, "Button") == 0 ||
+			_stricmp(className, STATUSCLASSNAMEA) == 0 || _stricmp(className, WC_STATICA) == 0) {
+			subAppName = g_darkModeEnabled ? L"Explorer" : NULL;
+		}
+
+		::SetWindowTheme(hWnd, subAppName, NULL);
+		::SendMessage(hWnd, WM_THEMECHANGED, 0, 0);
+		::InvalidateRect(hWnd, NULL, TRUE);
+	}
 }
 
 void WinMTRRefreshTheme()
 {
 	g_darkModeEnabled = QueryDarkModeSetting();
 	RebuildThemeBrushes();
+	ApplyNativeDarkModePreference();
 	g_themeInitialized = true;
 }
 
@@ -111,8 +183,13 @@ void WinMTRApplyThemeToWindow(CWnd* window)
 	const BOOL enableDark = WinMTRIsDarkModeEnabled() ? TRUE : FALSE;
 	const DWORD darkModeAttribute = 20;
 	const DWORD darkModeAttributeLegacy = 19;
+	InitializeNativeDarkModeSupport();
+	if(g_allowDarkModeForWindow) {
+		g_allowDarkModeForWindow(window->GetSafeHwnd(), enableDark);
+	}
 	::DwmSetWindowAttribute(window->GetSafeHwnd(), darkModeAttribute, &enableDark, sizeof(enableDark));
 	::DwmSetWindowAttribute(window->GetSafeHwnd(), darkModeAttributeLegacy, &enableDark, sizeof(enableDark));
+	ApplyNativeThemeToControl(window->GetSafeHwnd());
 }
 
 void WinMTRApplyThemeToChildren(CWnd* parent)
@@ -123,12 +200,7 @@ void WinMTRApplyThemeToChildren(CWnd* parent)
 	for(CWnd* child = parent->GetWindow(GW_CHILD); child; child = child->GetNextWindow()) {
 		HWND hWnd = child->GetSafeHwnd();
 		if(!hWnd) continue;
-		if(WinMTRIsDarkModeEnabled()) {
-			::SetWindowTheme(hWnd, L"DarkMode_Explorer", NULL);
-		} else {
-			::SetWindowTheme(hWnd, NULL, NULL);
-		}
-		::InvalidateRect(hWnd, NULL, TRUE);
+		ApplyNativeThemeToControl(hWnd);
 	}
 }
 
@@ -141,12 +213,15 @@ void WinMTRConfigureListCtrl(CListCtrl& list)
 		list.SetBkColor(g_themeColors.listBackground);
 		list.SetTextBkColor(g_themeColors.listBackground);
 		list.SetTextColor(g_themeColors.textColor);
-		::SetWindowTheme(list.GetSafeHwnd(), L"DarkMode_Explorer", NULL);
 	} else {
 		list.SetBkColor(::GetSysColor(COLOR_WINDOW));
 		list.SetTextBkColor(::GetSysColor(COLOR_WINDOW));
 		list.SetTextColor(::GetSysColor(COLOR_WINDOWTEXT));
-		::SetWindowTheme(list.GetSafeHwnd(), NULL, NULL);
+	}
+	ApplyNativeThemeToControl(list.GetSafeHwnd());
+	HWND header = ListView_GetHeader(list.GetSafeHwnd());
+	if(header) {
+		ApplyNativeThemeToControl(header);
 	}
 	::InvalidateRect(list.GetSafeHwnd(), NULL, TRUE);
 }
