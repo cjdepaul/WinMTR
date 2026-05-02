@@ -1338,9 +1338,9 @@ int WinMTRDialog::RunCliTrace(const char* hostname, int cycles, int durationSeco
 			int worst = wmtrnet->GetWorst(i);
 			int last = wmtrnet->GetLast(i);
 
-			js << "    {\"hop\": " << (i+1) << ", \"host\": \"" << JsonEscape(name) << "\", ";
-			js << "\"loss_pct\": " << loss << ", \"sent\": " << sent << ", \"recv\": " << recv;
-			js << ", \"best\": " << best << ", \"avg\": " << avg << ", \"worst\": " << worst << ", \"last\": " << last << " }";
+			js << "    {\"count\": " << (i+1) << ", \"host\": \"" << JsonEscape(name) << "\", ";
+			js << "\"Loss%\": " << loss << ", \"Snt\": " << sent;
+			js << ", \"Best\": " << best << ", \"Avg\": " << avg << ", \"Wrst\": " << worst << ", \"Last\": " << last << " }";
 			if(i != nh-1) js << ",\n"; else js << "\n";
 		}
 		js << "  ]\n}\n";
