@@ -409,6 +409,19 @@ int WinMTRNet::GetMax()
 	return max;
 }
 
+int WinMTRNet::GetStdDev(int at)
+{
+	WaitForSingleObject(ghMutex, INFINITE);
+	int avg = host[at].returned == 0 ? 0 : host[at].total / host[at].returned;
+	int sumSqDiff = 0;
+	for(int i = 0; i < host[at].xmit; ++i) {
+		sumSqDiff += (host[at].last - avg) * (host[at].last - avg);
+	}
+	int stddev = (host[at].returned > 1) ? static_cast<int>(sqrt(sumSqDiff / (host[at].returned - 1))) : 0;
+	ReleaseMutex(ghMutex);
+	return stddev;
+}
+
 void WinMTRNet::SetAddr(int at, u_long addr)
 {
 	bool shouldResolve = false;

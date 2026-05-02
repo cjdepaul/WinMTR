@@ -87,7 +87,7 @@ static std::string CenterCell(const std::string& value, size_t width)
 
 static std::string BuildCliSeparator(char fill)
 {
-	static const size_t widths[] = {57, 4, 4, 4, 4, 4, 4, 4};
+	static const size_t widths[] = {57, 4, 4, 4, 4, 4, 4, 4, 5};
 	std::ostringstream row;
 	row << '|';
 	for(size_t i = 0; i < sizeof(widths) / sizeof(widths[0]); ++i) {
@@ -105,7 +105,9 @@ static std::string BuildCliRow(
 	int best,
 	int avrg,
 	int wrst,
-	int last)
+	int last,
+	int stdDev
+)
 {
 	std::ostringstream row;
 	row << "| " << PadCell(host, 57, false)
@@ -116,6 +118,7 @@ static std::string BuildCliRow(
 		<< " | " << PadCell(std::to_string(avrg), 4, true)
 		<< " | " << PadCell(std::to_string(wrst), 4, true)
 		<< " | " << PadCell(std::to_string(last), 4, true)
+		<< " | " << PadCell(std::to_string(stdDev), 5, true)
 		<< " |\r\n";
 	return row.str();
 }
@@ -312,7 +315,7 @@ static std::string BuildCliScreen(WinMTRDialog* dialog, const char* hostname, in
 	screen << "WinMTR live report for " << hostname << "\r\n";
 	screen << "Press Ctrl+C to stop.\r\n\r\n";
 	screen << BuildCliSeparator('-');
-	screen << "| " << CenterCell("WinMTR statistics", 106) << " |\r\n";
+	screen << "| " << CenterCell("WinMTR statistics", 114) << " |\r\n";
 	screen << BuildCliSeparator('-');
 	screen << "| " << CenterCell("Host", 57)
 		   << " | " << CenterCell("%", 4)
@@ -322,6 +325,7 @@ static std::string BuildCliScreen(WinMTRDialog* dialog, const char* hostname, in
 		   << " | " << CenterCell("Avrg", 4)
 		   << " | " << CenterCell("Wrst", 4)
 		   << " | " << CenterCell("Last", 4)
+		   << " | " << CenterCell("StDev", 5)
 		   << " |\r\n";
 	screen << BuildCliSeparator('-');
 
@@ -337,7 +341,8 @@ static std::string BuildCliScreen(WinMTRDialog* dialog, const char* hostname, in
 			dialog->wmtrnet->GetBest(i),
 			dialog->wmtrnet->GetAvg(i),
 			dialog->wmtrnet->GetWorst(i),
-			dialog->wmtrnet->GetLast(i));
+			dialog->wmtrnet->GetLast(i),
+			dialog->wmtrnet->GetStdDev(i));
 	}
 
 	screen << BuildCliSeparator('-');
@@ -1053,10 +1058,10 @@ std::string WinMTRDialog::BuildTextReport() const
 	std::ostringstream report;
 	int nh = wmtrnet->GetMax();
 
-	report << "|--------------------------------------------------------------------------------------------------------------|\r\n";
-	report << "|                                               WinMTR statistics                                              |\r\n";
-	report << "|                          Host                           - %  | Sent | Recv | Best | Avrg | Wrst | Last |\r\n";
-	report << "|---------------------------------------------------------|----|------|------|------|------|------|------|\r\n";
+	report << "|----------------------------------------------------------------------------------------------------------------|\r\n";
+	report << "|                                               WinMTR statistics                                                |\r\n";
+	report << "|                          Host                           - %  | Sent | Recv | Best | Avrg | Wrst | Last | StDev |\r\n";
+	report << "|---------------------------------------------------------|----|------|------|------|------|------|------|-------|\r\n";
 
 	for(int i = 0; i < nh; ++i) {
 		wmtrnet->GetName(i, buf, sizeof(buf));
@@ -1071,6 +1076,7 @@ std::string WinMTRDialog::BuildTextReport() const
 			wmtrnet->GetAvg(i),
 			wmtrnet->GetWorst(i),
 			wmtrnet->GetLast(i));
+			wmtrnet->GetStdDev(i);
 		report << line;
 	}
 
@@ -1089,7 +1095,7 @@ std::string WinMTRDialog::BuildHtmlReport() const
 	report << "<html><head><title>WinMTR Statistics</title></head><body bgcolor=\"white\">\r\n";
 	report << "<center><h2>WinMTR statistics</h2></center>\r\n";
 	report << "<p align=\"center\"> <table border=\"1\" align=\"center\">\r\n";
-	report << "<tr><td>Host</td><td>%</td><td>Sent</td><td>Recv</td><td>Best</td><td>Avrg</td><td>Wrst</td><td>Last</td></tr>\r\n";
+	report << "<tr><td>Host</td><td>%</td><td>Sent</td><td>Recv</td><td>Best</td><td>Avrg</td><td>Wrst</td><td>Last</td><td>StDev</td></tr>\r\n";
 
 	for(int i = 0; i < nh; ++i) {
 		wmtrnet->GetName(i, buf, sizeof(buf));
@@ -1102,7 +1108,8 @@ std::string WinMTRDialog::BuildHtmlReport() const
 			   << wmtrnet->GetBest(i) << "</td><td>"
 			   << wmtrnet->GetAvg(i) << "</td><td>"
 			   << wmtrnet->GetWorst(i) << "</td><td>"
-			   << wmtrnet->GetLast(i) << "</td></tr>\r\n";
+			   << wmtrnet->GetLast(i) << "</td><td>"
+			   << wmtrnet->GetStdDev(i) << "</td></tr>\r\n";
 	}
 
 	report << "</table></body></html>\r\n";
@@ -1336,10 +1343,11 @@ int WinMTRDialog::RunCliTrace(const char* hostname, int cycles, int durationSeco
 			int avg = wmtrnet->GetAvg(i);
 			int worst = wmtrnet->GetWorst(i);
 			int last = wmtrnet->GetLast(i);
+			int stdDev = wmtrnet->GetStdDev(i);
 
 			js << "    {\"count\": " << (i+1) << ", \"host\": \"" << JsonEscape(name) << "\", ";
 			js << "\"Loss%\": " << loss << ", \"Snt\": " << sent;
-			js << ", \"Best\": " << best << ", \"Avg\": " << avg << ", \"Wrst\": " << worst << ", \"Last\": " << last << " }";
+			js << ", \"Best\": " << best << ", \"Avg\": " << avg << ", \"Wrst\": " << worst << ", \"Last\": " << last << ", \"StDev\": " << stdDev << " }";
 			if(i != nh-1) js << ",\n"; else js << "\n";
 		}
 		js << "  ]\n}\n";
