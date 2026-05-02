@@ -21,6 +21,7 @@ struct WinMTRCommandLineOptions {
 		: showHelp(false),
 		  cliMode(false),
 		  forceGui(false),
+		  jsonOutput(false),
 		  reportCycles(0),
 		  reportDurationSeconds(0)
 	{
@@ -29,6 +30,7 @@ struct WinMTRCommandLineOptions {
 	bool showHelp;
 	bool cliMode;
 	bool forceGui;
+	bool jsonOutput;
 	int reportCycles;
 	int reportDurationSeconds;
 	std::string hostName;
