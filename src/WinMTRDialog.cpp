@@ -1221,7 +1221,7 @@ int WinMTRDialog::ResolveTarget(const char* hostname, addrinfo** result, bool sh
 	return 1;
 }
 
-int WinMTRDialog::RunCliTrace(const char* hostname, int cycles, int durationSeconds)
+int WinMTRDialog::RunCliTrace(const char* hostname, int cycles, int durationSeconds, bool jsonOutput)
 {
 	addrinfo* anfo = NULL;
 	if(!ResolveTarget(hostname, &anfo, false)) {
@@ -1256,7 +1256,6 @@ int WinMTRDialog::RunCliTrace(const char* hostname, int cycles, int durationSeco
 
 	LONG previousStopState = InterlockedExchange(&g_cliStopRequested, 0);
 	SetConsoleCtrlHandler(CliConsoleHandler, TRUE);
-	BeginCliScreenSession();
 
 	DWORD startTick = GetTickCount();
 	int lastRenderedCycle = -1;
@@ -1271,9 +1270,11 @@ int WinMTRDialog::RunCliTrace(const char* hostname, int cycles, int durationSeco
 		int currentCycle = wmtrnet->GetXmit(0);
 		DWORD elapsedMs = GetTickCount() - startTick;
 
-		std::string screen = BuildCliScreen(this, hostname, cycles, durationSeconds, elapsedMs);
-		ClearCliScreen();
-		WriteCliOutput(screen.c_str());
+		if(!jsonOutput) {
+			std::string screen = BuildCliScreen(this, hostname, cycles, durationSeconds, elapsedMs);
+			ClearCliScreen();
+			WriteCliOutput(screen.c_str());
+		}
 
 		if(PollCliStopRequest()) {
 			running = false;
@@ -1288,11 +1289,71 @@ int WinMTRDialog::RunCliTrace(const char* hostname, int cycles, int durationSeco
 	wmtrnet->StopTrace();
 	WaitForSingleObject(worker, INFINITE);
 	CloseHandle(worker);
+
+	// If JSON output requested, build JSON and print once now
+	if(jsonOutput) {
+		auto JsonEscape = [](const char* s)->std::string{
+			std::string out;
+			if(!s) return out;
+			for(const unsigned char* p = (const unsigned char*)s; *p; ++p) {
+				unsigned char c = *p;
+				switch(c) {
+					case '"': out += "\\\""; break;
+					case '\\': out += "\\\\"; break;
+					case '\b': out += "\\b"; break;
+					case '\f': out += "\\f"; break;
+					case '\n': out += "\\n"; break;
+					case '\r': out += "\\r"; break;
+					case '\t': out += "\\t"; break;
+					default:
+						if(c < 0x20) {
+							char buf[8];
+							sprintf_s(buf, sizeof(buf), "\\u%04x", c);
+							out += buf;
+						} else {
+							out += (char)c;
+						}
+				}
+			}
+			return out;
+		};
+
+		std::ostringstream js;
+		js << "{\n";
+		js << "\"report\": {\n";
+		js << "\"mtr\": {\n";
+		js << "  \"dst\": \"" << JsonEscape(hostname) << "\",\n";
+		js << "  \"tests\": " << wmtrnet->GetXmit(0) << ",\n";
+		js << "}, \n";
+		js << "  \"hubs\": [\n";
+		int nh = wmtrnet->GetMax();
+		for(int i=0;i<nh;++i) {
+			char name[255];
+			wmtrnet->GetName(i, name, sizeof(name));
+			int loss = wmtrnet->GetPercent(i);
+			int sent = wmtrnet->GetXmit(i);
+			int recv = wmtrnet->GetReturned(i);
+			int best = wmtrnet->GetBest(i);
+			int avg = wmtrnet->GetAvg(i);
+			int worst = wmtrnet->GetWorst(i);
+			int last = wmtrnet->GetLast(i);
+
+			js << "    {\"hop\": " << (i+1) << ", \"host\": \"" << JsonEscape(name) << "\", ";
+			js << "\"loss_pct\": " << loss << ", \"sent\": " << sent << ", \"recv\": " << recv;
+			js << ", \"best\": " << best << ", \"avg\": " << avg << ", \"worst\": " << worst << ", \"last\": " << last << " }";
+			if(i != nh-1) js << ",\n"; else js << "\n";
+		}
+		js << "  ]\n}\n";
+		js << "}\n";
+
+		WriteCliOutput(js.str().c_str());
+	}
+
 	EndCliScreenSession();
 	SetConsoleCtrlHandler(CliConsoleHandler, FALSE);
 	InterlockedExchange(&g_cliStopRequested, previousStopState);
 
-	WriteCliOutput("\r\n");
+	if(!jsonOutput) WriteCliOutput("\r\n");
 	return 1;
 }
 

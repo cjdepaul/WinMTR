@@ -191,7 +191,7 @@ bool WinMTRMain::RunCliMode(const WinMTRCommandLineOptions& options, WinMTRDialo
 		WriteConsoleText("WinMTR network initialization failed.\n");
 		return false;
 	}
-	return wmtrdlg->RunCliTrace(options.hostName.c_str(), options.reportCycles, options.reportDurationSeconds) != 0;
+	return wmtrdlg->RunCliTrace(options.hostName.c_str(), options.reportCycles, options.reportDurationSeconds, options.jsonOutput) != 0;
 }
 
 void WinMTRMain::HideOwnedConsoleWindow() const

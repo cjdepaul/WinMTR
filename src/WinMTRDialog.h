@@ -79,7 +79,7 @@ public:
 	int ResolveTarget(const char* hostname, addrinfo** result, bool showErrors = true);
 	std::string BuildTextReport() const;
 	std::string BuildHtmlReport() const;
-	int RunCliTrace(const char* hostname, int cycles, int durationSeconds);
+	int RunCliTrace(const char* hostname, int cycles, int durationSeconds, bool jsonOutput = false);
 
 	int DisplayRedraw();
 	void Transit(STATES new_state);
