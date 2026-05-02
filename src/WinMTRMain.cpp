@@ -272,10 +272,10 @@ int WinMTRMain::GetParamValue(LPTSTR cmd, char* param, char sparam, char* value)
 	char p_long[1024];
 	char p_short[1024];
 	
-	sprintf(p_long,"--%s ", param);
+	sprintf_s(p_long, sizeof(p_long),"--%s ", param);
 	p_short[0] = '\0';
 	if(sparam)
-		sprintf(p_short,"-%c ", sparam);
+		sprintf_s(p_short, sizeof(p_short),"-%c ", sparam);
 	
 	if((p=strstr(cmd, p_long))) ;
 	else if(sparam)

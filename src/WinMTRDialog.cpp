@@ -625,7 +625,7 @@ BOOL WinMTRDialog::InitRegistry()
 		unsigned char str_host[255];
 		nrLRU = tmp_dword;
 		for(int i=0; i<maxLRU; i++) {
-			sprintf(key_name,"Host%d", i+1);
+			sprintf_s(key_name, sizeof(key_name), "Host%d", i+1);
 			if(RegQueryValueEx(hKey_v, key_name, 0, NULL, NULL, &value_size) == ERROR_SUCCESS) {
 				RegQueryValueEx(hKey_v, key_name, 0, NULL, str_host, &value_size);
 				str_host[value_size]='\0';
@@ -891,7 +891,7 @@ void WinMTRDialog::OnRestart()
 				if(RegCreateKeyEx(HKEY_CURRENT_USER,"Software\\WinMTR\\LRU",0,NULL,0,KEY_ALL_ACCESS,NULL,&hKey,NULL)==ERROR_SUCCESS) {
 					char key_name[20];
 					if(++nrLRU>maxLRU) nrLRU=0;
-					sprintf(key_name, "Host%d", nrLRU);
+					sprintf_s(key_name, sizeof(key_name), "Host%d", nrLRU);
 					RegSetValueEx(hKey,key_name, 0, REG_SZ, (const unsigned char*)(LPCTSTR)sHost, (DWORD)strlen((LPCTSTR)sHost)+1);
 					tmp_dword = nrLRU;
 					RegSetValueEx(hKey,"NrLRU", 0, REG_DWORD, (const unsigned char*)&tmp_dword, sizeof(DWORD));
@@ -939,7 +939,7 @@ void WinMTRDialog::OnOptions()
 			if(RegCreateKeyEx(HKEY_CURRENT_USER,"Software\\WinMTR\\LRU",0,NULL,0,KEY_ALL_ACCESS,NULL,&hKey,NULL)==ERROR_SUCCESS) {
 				char key_name[20];
 				for(int i = maxLRU; i<=nrLRU; ++i) {
-					sprintf(key_name, "Host%d", i);
+					sprintf_s(key_name, sizeof(key_name), "Host%d", i);
 					RegDeleteValue(hKey,key_name);
 				}
 				nrLRU = maxLRU;
@@ -1075,7 +1075,7 @@ std::string WinMTRDialog::BuildTextReport() const
 		wmtrnet->GetASN(i, asn);
 		if(strcmp(asn, "") == 0) strcpy(asn, "-");
 
-		sprintf(line, "|%57.57s | %-10.10s | %2d | %4d | %4d | %4d | %4d | %4d | %4d |\r\n",
+		sprintf_s(line, sizeof(line), "|%57.57s | %-10.10s | %2d | %4d | %4d | %4d | %4d | %4d | %4d |\r\n",
 			buf,
 			asn,
 			wmtrnet->GetPercent(i),
@@ -1153,7 +1153,7 @@ int WinMTRDialog::DisplayRedraw()
 		wmtrnet->GetName(i, buf);
 		if(!*buf) strcpy(buf,"No response from host");
 		
-		sprintf(nr_crt, "%d", i+1);
+		sprintf_s(nr_crt, sizeof(nr_crt), "%d", i+1);
 		if(m_listMTR.GetItemCount() <= i)
 			m_listMTR.InsertItem(i, buf);
 		else
@@ -1161,25 +1161,25 @@ int WinMTRDialog::DisplayRedraw()
 			
 		m_listMTR.SetItem(i, 1, LVIF_TEXT, nr_crt, 0, 0, 0, 0);
 		
-		sprintf(buf, "%d", wmtrnet->GetPercent(i));
+		sprintf_s(buf, sizeof(buf), "%d", wmtrnet->GetPercent(i));
 		m_listMTR.SetItem(i, 2, LVIF_TEXT, buf, 0, 0, 0, 0);
 		
-		sprintf(buf, "%d", wmtrnet->GetXmit(i));
+		sprintf_s(buf, sizeof(buf), "%d", wmtrnet->GetXmit(i));
 		m_listMTR.SetItem(i, 3, LVIF_TEXT, buf, 0, 0, 0, 0);
 		
-		sprintf(buf, "%d", wmtrnet->GetReturned(i));
+		sprintf_s(buf, sizeof(buf), "%d", wmtrnet->GetReturned(i));
 		m_listMTR.SetItem(i, 4, LVIF_TEXT, buf, 0, 0, 0, 0);
 		
-		sprintf(buf, "%d", wmtrnet->GetBest(i));
+		sprintf_s(buf, sizeof(buf), "%d", wmtrnet->GetBest(i));
 		m_listMTR.SetItem(i, 5, LVIF_TEXT, buf, 0, 0, 0, 0);
 		
-		sprintf(buf, "%d", wmtrnet->GetAvg(i));
+		sprintf_s(buf, sizeof(buf), "%d", wmtrnet->GetAvg(i));
 		m_listMTR.SetItem(i, 6, LVIF_TEXT, buf, 0, 0, 0, 0);
 		
-		sprintf(buf, "%d", wmtrnet->GetWorst(i));
+		sprintf_s(buf, sizeof(buf), "%d", wmtrnet->GetWorst(i));
 		m_listMTR.SetItem(i, 7, LVIF_TEXT, buf, 0, 0, 0, 0);
 		
-		sprintf(buf, "%d", wmtrnet->GetLast(i));
+		sprintf_s(buf, sizeof(buf), "%d", wmtrnet->GetLast(i));
 		m_listMTR.SetItem(i, 8, LVIF_TEXT, buf, 0, 0, 0, 0);
 		
 		
@@ -1200,7 +1200,7 @@ int WinMTRDialog::InitMTRNet()
 	char buf[255];
 	m_comboHost.GetWindowText(hostname, 255);
 	
-	sprintf(buf, "Resolving host %s...", hostname);
+	sprintf_s(buf, sizeof(buf), "Resolving host %s...", hostname);
 	statusBar.SetPaneText(0,buf);
 	
 	addrinfo* anfo = NULL;
@@ -1365,7 +1365,7 @@ void WinMTRDialog::ClearHistory()
 	}
 	
 	for(int i = 0; i<=nrLRU; i++) {
-		sprintf(key_name, "Host%d", i);
+		sprintf_s(key_name, sizeof(key_name), "Host%d", i);
 		RegDeleteValue(hKey,key_name);
 	}
 	nrLRU = 0;

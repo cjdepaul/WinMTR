@@ -75,20 +75,20 @@ BOOL WinMTRProperties::OnInitDialog()
 	m_editHost.SetWindowText(host);
 	m_editComment.SetWindowText(comment);
 
-	sprintf(buf, "%d", pck_loss);
+	sprintf_s(buf, sizeof(buf), "%d", pck_loss);
 	m_editLoss.SetWindowText(buf);
-	sprintf(buf, "%d", pck_sent);
+	sprintf_s(buf, sizeof(buf), "%d", pck_sent);
 	m_editSent.SetWindowText(buf);
-	sprintf(buf, "%d", pck_recv);
+	sprintf_s(buf, sizeof(buf), "%d", pck_recv);
 	m_editRecv.SetWindowText(buf);
 
-	sprintf(buf, "%.1f", ping_last);
+	sprintf_s(buf, sizeof(buf), "%.1f", ping_last);
 	m_editLast.SetWindowText(buf);
-	sprintf(buf, "%.1f", ping_best);
+	sprintf_s(buf, sizeof(buf), "%.1f", ping_best);
 	m_editBest.SetWindowText(buf);
-	sprintf(buf, "%.1f", ping_worst);
+	sprintf_s(buf, sizeof(buf), "%.1f", ping_worst);
 	m_editWorst.SetWindowText(buf);
-	sprintf(buf, "%.1f", ping_avrg);
+	sprintf_s(buf, sizeof(buf), "%.1f", ping_avrg);
 	m_editAvrg.SetWindowText(buf);
 
 	return FALSE;

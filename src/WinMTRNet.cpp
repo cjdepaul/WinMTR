@@ -79,7 +79,7 @@ static bool BuildAsnLookupQuery(const sockaddr* addr, std::string& query)
 	if(addr->sa_family == AF_INET) {
 		const unsigned char* bytes = reinterpret_cast<const unsigned char*>(&reinterpret_cast<const sockaddr_in*>(addr)->sin_addr);
 		char buffer[64];
-		sprintf(buffer, "%u.%u.%u.%u.origin.asn.cymru.com", bytes[3], bytes[2], bytes[1], bytes[0]);
+		sprintf_s(buffer, sizeof(buffer), "%u.%u.%u.%u.origin.asn.cymru.com", bytes[3], bytes[2], bytes[1], bytes[0]);
 		query = buffer;
 		return true;
 	}
