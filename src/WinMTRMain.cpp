@@ -170,6 +170,9 @@ bool WinMTRMain::ParseCommandLineParams(LPTSTR cmd, WinMTRDialog* wmtrdlg, WinMT
 		options.cliMode = true;
 		options.reportDurationSeconds = max(1, atoi(value));
 	}
+	if(GetParamValue(cmd, "json", 'j', NULL)) {
+		options.jsonOutput = true;
+	}
 	if(!options.forceGui && hasAnyCliArguments) {
 		options.cliMode = true;
 	}
@@ -188,7 +191,7 @@ bool WinMTRMain::RunCliMode(const WinMTRCommandLineOptions& options, WinMTRDialo
 		WriteConsoleText("WinMTR network initialization failed.\n");
 		return false;
 	}
-	return wmtrdlg->RunCliTrace(options.hostName.c_str(), options.reportCycles, options.reportDurationSeconds) != 0;
+	return wmtrdlg->RunCliTrace(options.hostName.c_str(), options.reportCycles, options.reportDurationSeconds, options.jsonOutput) != 0;
 }
 
 void WinMTRMain::HideOwnedConsoleWindow() const
@@ -254,7 +257,8 @@ void WinMTRMain::PrintHelp() const
 	help << "  -s, --size BYTES         ICMP payload size.\n";
 	help << "  -n, --numeric            Do not perform reverse DNS lookups.\n";
 	help << "  -4, --ipv4               Force IPv4.\n";
-	help << "  -6, --ipv6               Force IPv6.\n\n";
+	help << "  -6, --ipv6               Force IPv6.\n";
+	help << "  -j, --json 				Output JSON instead of the interactive report (not implemented yet).\n\n";
 	help << "CLI mode refreshes continuously until Ctrl+C by default.\n";
 	WriteConsoleText(help.str().c_str());
 }
