@@ -36,6 +36,7 @@ struct s_nethost {
 	int last;				// last time
 	int best;				// best time
 	int worst;			// worst time
+	int stddev;			// standard deviation
 	char name[255];
 };
 
@@ -75,6 +76,7 @@ public:
 	int		GetReturned(int at);
 	int		GetXmit(int at);
 	int		GetMax();
+	int     GetStdDev(int at);
 	
 	void	SetAddr(int at, u_long addr);
 	void	SetAddr6(int at, IPV6_ADDRESS_EX addrex);
