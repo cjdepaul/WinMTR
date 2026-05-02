@@ -87,7 +87,7 @@ static std::string CenterCell(const std::string& value, size_t width)
 
 static std::string BuildCliSeparator(char fill)
 {
-	static const size_t widths[] = {57, 10, 4, 4, 4, 4, 4, 4, 4};
+	static const size_t widths[] = {57, 4, 4, 4, 4, 4, 4, 4};
 	std::ostringstream row;
 	row << '|';
 	for(size_t i = 0; i < sizeof(widths) / sizeof(widths[0]); ++i) {
@@ -99,7 +99,6 @@ static std::string BuildCliSeparator(char fill)
 
 static std::string BuildCliRow(
 	const std::string& host,
-	const std::string& asn,
 	int loss,
 	int sent,
 	int recv,
@@ -110,7 +109,6 @@ static std::string BuildCliRow(
 {
 	std::ostringstream row;
 	row << "| " << PadCell(host, 57, false)
-		<< " | " << PadCell(asn, 10, false)
 		<< " | " << PadCell(std::to_string(loss), 4, true)
 		<< " | " << PadCell(std::to_string(sent), 4, true)
 		<< " | " << PadCell(std::to_string(recv), 4, true)
@@ -307,7 +305,6 @@ static bool PollCliStopRequest()
 static std::string BuildCliScreen(WinMTRDialog* dialog, const char* hostname, int cycles, int durationSeconds, DWORD elapsedMs)
 {
 	char host[255];
-	char asn[64];
 	std::ostringstream screen;
 	int nh = dialog->wmtrnet->GetMax();
 	int currentCycle = dialog->wmtrnet->GetXmit(0);
@@ -315,10 +312,9 @@ static std::string BuildCliScreen(WinMTRDialog* dialog, const char* hostname, in
 	screen << "WinMTR live report for " << hostname << "\r\n";
 	screen << "Press Ctrl+C to stop.\r\n\r\n";
 	screen << BuildCliSeparator('-');
-	screen << "| " << CenterCell("WinMTR statistics", 105) << " |\r\n";
+	screen << "| " << CenterCell("WinMTR statistics", 106) << " |\r\n";
 	screen << BuildCliSeparator('-');
 	screen << "| " << CenterCell("Host", 57)
-		   << " | " << CenterCell("ASN", 10)
 		   << " | " << CenterCell("%", 4)
 		   << " | " << CenterCell("Sent", 4)
 		   << " | " << CenterCell("Recv", 4)
@@ -332,12 +328,9 @@ static std::string BuildCliScreen(WinMTRDialog* dialog, const char* hostname, in
 	for(int i = 0; i < nh; ++i) {
 		dialog->wmtrnet->GetName(i, host, sizeof(host));
 		if(strcmp(host, "") == 0) strcpy_s(host, sizeof(host), "No response from host");
-		dialog->wmtrnet->GetASN(i, asn, sizeof(asn));
-		if(strcmp(asn, "") == 0) strcpy_s(asn, sizeof(asn), "-");
 
 		screen << BuildCliRow(
 			host,
-			asn,
 			dialog->wmtrnet->GetPercent(i),
 			dialog->wmtrnet->GetXmit(i),
 			dialog->wmtrnet->GetReturned(i),
@@ -1056,25 +1049,21 @@ void WinMTRDialog::OnEXPH()
 std::string WinMTRDialog::BuildTextReport() const
 {
 	char buf[255];
-	char asn[64];
 	char line[1024];
 	std::ostringstream report;
 	int nh = wmtrnet->GetMax();
 
 	report << "|--------------------------------------------------------------------------------------------------------------|\r\n";
 	report << "|                                               WinMTR statistics                                              |\r\n";
-	report << "|                          Host                           - ASN        - %  | Sent | Recv | Best | Avrg | Wrst | Last |\r\n";
-	report << "|---------------------------------------------------------|------------|----|------|------|------|------|------|------|\r\n";
+	report << "|                          Host                           - %  | Sent | Recv | Best | Avrg | Wrst | Last |\r\n";
+	report << "|---------------------------------------------------------|----|------|------|------|------|------|------|\r\n";
 
 	for(int i = 0; i < nh; ++i) {
 		wmtrnet->GetName(i, buf, sizeof(buf));
 		if(strcmp(buf, "") == 0) strcpy_s(buf, sizeof(buf), "No response from host");
-		wmtrnet->GetASN(i, asn, sizeof(asn));
-		if(strcmp(asn, "") == 0) strcpy_s(asn, sizeof(asn), "-");
 
-		sprintf_s(line, sizeof(line), "|%57.57s | %-10.10s | %2d | %4d | %4d | %4d | %4d | %4d | %4d |\r\n",
+		sprintf_s(line, sizeof(line), " | %-10.10s | %2d | %4d | %4d | %4d | %4d | %4d | %4d |\r\n",
 			buf,
-			asn,
 			wmtrnet->GetPercent(i),
 			wmtrnet->GetXmit(i),
 			wmtrnet->GetReturned(i),
@@ -1094,22 +1083,19 @@ std::string WinMTRDialog::BuildTextReport() const
 std::string WinMTRDialog::BuildHtmlReport() const
 {
 	char buf[255];
-	char asn[64];
 	std::ostringstream report;
 	int nh = wmtrnet->GetMax();
 
 	report << "<html><head><title>WinMTR Statistics</title></head><body bgcolor=\"white\">\r\n";
 	report << "<center><h2>WinMTR statistics</h2></center>\r\n";
 	report << "<p align=\"center\"> <table border=\"1\" align=\"center\">\r\n";
-	report << "<tr><td>Host</td><td>ASN</td><td>%</td><td>Sent</td><td>Recv</td><td>Best</td><td>Avrg</td><td>Wrst</td><td>Last</td></tr>\r\n";
+	report << "<tr><td>Host</td><td>%</td><td>Sent</td><td>Recv</td><td>Best</td><td>Avrg</td><td>Wrst</td><td>Last</td></tr>\r\n";
 
 	for(int i = 0; i < nh; ++i) {
 		wmtrnet->GetName(i, buf, sizeof(buf));
 		if(strcmp(buf, "") == 0) strcpy_s(buf, sizeof(buf), "No response from host");
-		wmtrnet->GetASN(i, asn, sizeof(asn));
-		if(strcmp(asn, "") == 0) strcpy_s(asn, sizeof(asn), "-");
 
-		report << "<tr><td>" << HtmlEscape(buf) << "</td><td>" << HtmlEscape(asn) << "</td><td>"
+		report << "<tr><td>" << HtmlEscape(buf) << "</td><td>"
 			   << wmtrnet->GetPercent(i) << "</td><td>"
 			   << wmtrnet->GetXmit(i) << "</td><td>"
 			   << wmtrnet->GetReturned(i) << "</td><td>"
