@@ -383,18 +383,18 @@ sockaddr* WinMTRNet::GetAddr(int at)
 	return (sockaddr*)&host[at].addr;
 }
 
-int WinMTRNet::GetName(int at, char* n)
+int WinMTRNet::GetName(int at, char* n, size_t nSize)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	strcpy(n, host[at].name);
+	strcpy_s(n, nSize, host[at].name);
 	ReleaseMutex(ghMutex);
 	return 0;
 }
 
-int WinMTRNet::GetASN(int at, char* n)
+int WinMTRNet::GetASN(int at, char* n, size_t nSize)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	strcpy(n, host[at].asn);
+	strcpy_s(n, nSize, host[at].asn);
 	ReleaseMutex(ghMutex);
 	return 0;
 }
@@ -520,14 +520,14 @@ void WinMTRNet::SetAddr6(int at, IPV6_ADDRESS_EX addrex)
 void WinMTRNet::SetName(int at, char* n)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	strcpy(host[at].name, n);
+	strcpy_s(host[at].name, sizeof(host[at].name), n);
 	ReleaseMutex(ghMutex);
 }
 
 void WinMTRNet::SetASN(int at, const char* n)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	if(n && *n) strcpy(host[at].asn, n);
+	if(n && *n) strcpy_s(host[at].asn, sizeof(host[at].asn), n);
 	else host[at].asn[0] = '\0';
 	ReleaseMutex(ghMutex);
 }
@@ -578,7 +578,7 @@ void WinMTRNet::SetErrorName(int at, DWORD errnum)
 	}
 	WaitForSingleObject(ghMutex, INFINITE);
 	if(!*host[at].name)
-		strcpy(host[at].name,name);
+		strcpy_s(host[at].name, sizeof(host[at].name), name);
 	ReleaseMutex(ghMutex);
 }
 

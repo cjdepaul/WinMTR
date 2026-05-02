@@ -67,8 +67,8 @@ public:
 	void	StopTrace();
 	
 	sockaddr* GetAddr(int at);
-	int		GetName(int at, char* n);
-	int		GetASN(int at, char* n);
+	int		GetName(int at, char* n, size_t nSize);
+	int		GetASN(int at, char* n, size_t nSize);
 	int		GetBest(int at);
 	int		GetWorst(int at);
 	int		GetAvg(int at);

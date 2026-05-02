@@ -330,10 +330,10 @@ static std::string BuildCliScreen(WinMTRDialog* dialog, const char* hostname, in
 	screen << BuildCliSeparator('-');
 
 	for(int i = 0; i < nh; ++i) {
-		dialog->wmtrnet->GetName(i, host);
-		if(strcmp(host, "") == 0) strcpy(host, "No response from host");
-		dialog->wmtrnet->GetASN(i, asn);
-		if(strcmp(asn, "") == 0) strcpy(asn, "-");
+		dialog->wmtrnet->GetName(i, host, sizeof(host));
+		if(strcmp(host, "") == 0) strcpy_s(host, sizeof(host), "No response from host");
+		dialog->wmtrnet->GetASN(i, asn, sizeof(asn));
+		if(strcmp(asn, "") == 0) strcpy_s(asn, sizeof(asn), "-");
 
 		screen << BuildCliRow(
 			host,
@@ -776,15 +776,12 @@ void WinMTRDialog::OnDblclkList(NMHDR* /*pNMHDR*/, LRESULT* pResult)
 			union {sockaddr* addr; sockaddr_in* addr4; sockaddr_in6* addr6;};
 			addr=wmtrnet->GetAddr(nItem);
 			if(!(addr4->sin_family==AF_INET&&addr4->sin_addr.s_addr) && !(addr6->sin6_family==AF_INET6&&(addr6->sin6_addr.u.Word[0]|addr6->sin6_addr.u.Word[1]|addr6->sin6_addr.u.Word[2]|addr6->sin6_addr.u.Word[3]|addr6->sin6_addr.u.Word[4]|addr6->sin6_addr.u.Word[5]|addr6->sin6_addr.u.Word[6]|addr6->sin6_addr.u.Word[7]))) {
-				strcpy(wmtrprop.host,"");
-				strcpy(wmtrprop.ip,"");
-				wmtrnet->GetName(nItem, wmtrprop.comment);
-			} else {
-				wmtrnet->GetName(nItem, wmtrprop.host);
-				if(getnameinfo(addr,sizeof(sockaddr_in6),wmtrprop.ip,40,NULL,0,NI_NUMERICHOST)) {
-					*wmtrprop.ip='\0';
-				}
-				strcpy(wmtrprop.comment, "Host alive.");
+				strcpy_s(wmtrprop.host, sizeof(wmtrprop.host), "");
+				strcpy_s(wmtrprop.ip, sizeof(wmtrprop.ip), "");
+			wmtrnet->GetName(nItem, wmtrprop.comment, sizeof(wmtrprop.comment));
+		} else {
+			wmtrnet->GetName(nItem, wmtrprop.host, sizeof(wmtrprop.host));
+				strcpy_s(wmtrprop.comment, sizeof(wmtrprop.comment), "Host alive.");
 			}
 			
 			wmtrprop.ping_avrg = (float)wmtrnet->GetAvg(nItem);
@@ -969,7 +966,7 @@ void WinMTRDialog::OnCTTC()
 	
 	clipbuffer = GlobalAlloc(GMEM_DDESHARE, source.GetLength()+1);
 	buffer = (char*)GlobalLock(clipbuffer);
-	strcpy(buffer, LPCSTR(source));
+	strcpy_s(buffer, source.GetLength() + 1, LPCSTR(source));
 	GlobalUnlock(clipbuffer);
 	
 	SetClipboardData(CF_TEXT,clipbuffer);
@@ -994,7 +991,7 @@ void WinMTRDialog::OnCHTC()
 	
 	clipbuffer = GlobalAlloc(GMEM_DDESHARE, source.GetLength()+1);
 	buffer = (char*)GlobalLock(clipbuffer);
-	strcpy(buffer, LPCSTR(source));
+	strcpy_s(buffer, source.GetLength() + 1, LPCSTR(source));
 	GlobalUnlock(clipbuffer);
 	
 	SetClipboardData(CF_TEXT,clipbuffer);
@@ -1070,10 +1067,10 @@ std::string WinMTRDialog::BuildTextReport() const
 	report << "|---------------------------------------------------------|------------|----|------|------|------|------|------|------|\r\n";
 
 	for(int i = 0; i < nh; ++i) {
-		wmtrnet->GetName(i, buf);
-		if(strcmp(buf, "") == 0) strcpy(buf, "No response from host");
-		wmtrnet->GetASN(i, asn);
-		if(strcmp(asn, "") == 0) strcpy(asn, "-");
+		wmtrnet->GetName(i, buf, sizeof(buf));
+		if(strcmp(buf, "") == 0) strcpy_s(buf, sizeof(buf), "No response from host");
+		wmtrnet->GetASN(i, asn, sizeof(asn));
+		if(strcmp(asn, "") == 0) strcpy_s(asn, sizeof(asn), "-");
 
 		sprintf_s(line, sizeof(line), "|%57.57s | %-10.10s | %2d | %4d | %4d | %4d | %4d | %4d | %4d |\r\n",
 			buf,
@@ -1107,10 +1104,10 @@ std::string WinMTRDialog::BuildHtmlReport() const
 	report << "<tr><td>Host</td><td>ASN</td><td>%</td><td>Sent</td><td>Recv</td><td>Best</td><td>Avrg</td><td>Wrst</td><td>Last</td></tr>\r\n";
 
 	for(int i = 0; i < nh; ++i) {
-		wmtrnet->GetName(i, buf);
-		if(strcmp(buf, "") == 0) strcpy(buf, "No response from host");
-		wmtrnet->GetASN(i, asn);
-		if(strcmp(asn, "") == 0) strcpy(asn, "-");
+		wmtrnet->GetName(i, buf, sizeof(buf));
+		if(strcmp(buf, "") == 0) strcpy_s(buf, sizeof(buf), "No response from host");
+		wmtrnet->GetASN(i, asn, sizeof(asn));
+		if(strcmp(asn, "") == 0) strcpy_s(asn, sizeof(asn), "-");
 
 		report << "<tr><td>" << HtmlEscape(buf) << "</td><td>" << HtmlEscape(asn) << "</td><td>"
 			   << wmtrnet->GetPercent(i) << "</td><td>"
@@ -1150,8 +1147,8 @@ int WinMTRDialog::DisplayRedraw()
 	
 	for(int i=0; i <nh ; ++i) {
 	
-		wmtrnet->GetName(i, buf);
-		if(!*buf) strcpy(buf,"No response from host");
+		wmtrnet->GetName(i, buf, sizeof(buf));
+		if(!*buf) strcpy_s(buf, sizeof(buf), "No response from host");
 		
 		sprintf_s(nr_crt, sizeof(nr_crt), "%d", i+1);
 		if(m_listMTR.GetItemCount() <= i)
