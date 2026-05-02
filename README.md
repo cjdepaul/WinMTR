@@ -3,14 +3,13 @@ WinMTR 2.0
 
 WinMTR 2.0 is a lightweight Windows network diagnostic tool that combines traceroute-style path discovery with continuous ping statistics.
 
-This version adds a practical command-line experience similar to Linux `mtr`, per-hop ASN lookup, IPv4/IPv6 selection, and a native Windows GUI with system-following dark mode.
+This version adds a practical command-line experience similar to Linux `mtr`, IPv4/IPv6 selection, and a native Windows GUI with system-following dark mode.
 
 ## Features
 
 - Live CLI mode by default when a target host is passed on the command line
 - In-place terminal refresh with `Ctrl+C` stop support
 - Optional bounded runs with cycle or duration limits
-- Per-hop ASN lookup in CLI, copied text reports, and exported reports
 - IPv4 and IPv6 selection with `-4` and `-6`
 - GUI mode for classic WinMTR usage
 - Native Windows light/dark appearance for the GUI

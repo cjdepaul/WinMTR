@@ -14,4 +14,3 @@ Options:
   -6, --ipv6               Force IPv6.
 
 CLI mode refreshes continuously until Ctrl+C by default.
-CLI reports include per-hop ASN lookup when available.

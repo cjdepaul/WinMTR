@@ -72,64 +72,6 @@ static std::string TrimCopy(const std::string& value)
 	return value.substr(start, end - start + 1);
 }
 
-static bool BuildAsnLookupQuery(const sockaddr* addr, std::string& query)
-{
-	if(!addr) return false;
-	query.clear();
-	if(addr->sa_family == AF_INET) {
-		const unsigned char* bytes = reinterpret_cast<const unsigned char*>(&reinterpret_cast<const sockaddr_in*>(addr)->sin_addr);
-		char buffer[64];
-		sprintf_s(buffer, sizeof(buffer), "%u.%u.%u.%u.origin.asn.cymru.com", bytes[3], bytes[2], bytes[1], bytes[0]);
-		query = buffer;
-		return true;
-	}
-	if(addr->sa_family == AF_INET6) {
-		const unsigned char* bytes = reinterpret_cast<const unsigned char*>(&reinterpret_cast<const sockaddr_in6*>(addr)->sin6_addr);
-		query.reserve(32 * 2 + strlen("origin6.asn.cymru.com"));
-		static const char* hex = "0123456789abcdef";
-		for(int i = 15; i >= 0; --i) {
-			query.push_back(hex[bytes[i] & 0x0F]);
-			query.push_back('.');
-			query.push_back(hex[(bytes[i] >> 4) & 0x0F]);
-			query.push_back('.');
-		}
-		query += "origin6.asn.cymru.com";
-		return true;
-	}
-	return false;
-}
-
-static bool LookupAsn(const sockaddr* addr, std::string& asn)
-{
-	std::string query;
-	if(!BuildAsnLookupQuery(addr, query)) return false;
-	PDNS_RECORD records = NULL;
-	DNS_STATUS status = DnsQuery_A(query.c_str(), DNS_TYPE_TEXT, DNS_QUERY_STANDARD, NULL, &records, NULL);
-	if(status != ERROR_SUCCESS || !records) {
-		if(records) DnsRecordListFree(records, DnsFreeRecordList);
-		return false;
-	}
-
-	bool found = false;
-	for(PDNS_RECORD record = records; record; record = record->pNext) {
-		if(record->wType != DNS_TYPE_TEXT || record->Data.TXT.dwStringCount == 0) continue;
-		std::string text;
-		for(DWORD i = 0; i < record->Data.TXT.dwStringCount; ++i) {
-			if(record->Data.TXT.pStringArray[i]) text += record->Data.TXT.pStringArray[i];
-		}
-		size_t pipePos = text.find('|');
-		std::string field = TrimCopy(pipePos == std::string::npos ? text : text.substr(0, pipePos));
-		if(field.empty() || field == "NA") continue;
-		asn = "AS";
-		asn += field;
-		found = true;
-		break;
-	}
-
-	DnsRecordListFree(records, DnsFreeRecordList);
-	return found;
-}
-
 unsigned WINAPI TraceThread(void* p);
 unsigned WINAPI TraceThread6(void* p);
 void DnsResolverThread(void* p);
@@ -391,14 +333,6 @@ int WinMTRNet::GetName(int at, char* n, size_t nSize)
 	return 0;
 }
 
-int WinMTRNet::GetASN(int at, char* n, size_t nSize)
-{
-	WaitForSingleObject(ghMutex, INFINITE);
-	strcpy_s(n, nSize, host[at].asn);
-	ReleaseMutex(ghMutex);
-	return 0;
-}
-
 int WinMTRNet::GetBest(int at)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
@@ -524,14 +458,6 @@ void WinMTRNet::SetName(int at, char* n)
 	ReleaseMutex(ghMutex);
 }
 
-void WinMTRNet::SetASN(int at, const char* n)
-{
-	WaitForSingleObject(ghMutex, INFINITE);
-	if(n && *n) strcpy_s(host[at].asn, sizeof(host[at].asn), n);
-	else host[at].asn[0] = '\0';
-	ReleaseMutex(ghMutex);
-}
-
 void WinMTRNet::SetErrorName(int at, DWORD errnum)
 {
 	const char* name;
@@ -617,10 +543,6 @@ void DnsResolverThread(void* p)
 	int addressLength = GetSockaddrLength(address);
 	if(!getnameinfo(address,addressLength,hostname,NI_MAXHOST,NULL,0,NI_NUMERICHOST)) {
 		wn->SetName(dnt->index,hostname);
-	}
-	std::string asn;
-	if(LookupAsn(address, asn)) {
-		wn->SetASN(dnt->index, asn.c_str());
 	}
 	if(wn->wmtrdlg->useDNS) {
 		TRACE_MSG("DNS resolver thread started.");

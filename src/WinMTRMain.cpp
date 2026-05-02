@@ -260,7 +260,6 @@ void WinMTRMain::PrintHelp() const
 	help << "  -6, --ipv6               Force IPv6.\n";
 	help << "  -j, --json 				Output JSON instead of the interactive report (not implemented yet).\n\n";
 	help << "CLI mode refreshes continuously until Ctrl+C by default.\n";
-	help << "CLI reports include per-hop ASN lookup when available.\n";
 	WriteConsoleText(help.str().c_str());
 }
 
