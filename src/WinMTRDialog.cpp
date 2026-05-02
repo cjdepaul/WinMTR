@@ -1332,7 +1332,6 @@ int WinMTRDialog::RunCliTrace(const char* hostname, int cycles, int durationSeco
 			wmtrnet->GetName(i, name, sizeof(name));
 			int loss = wmtrnet->GetPercent(i);
 			int sent = wmtrnet->GetXmit(i);
-			int recv = wmtrnet->GetReturned(i);
 			int best = wmtrnet->GetBest(i);
 			int avg = wmtrnet->GetAvg(i);
 			int worst = wmtrnet->GetWorst(i);
