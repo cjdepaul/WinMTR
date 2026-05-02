@@ -256,7 +256,6 @@ void WinMTRMain::PrintHelp() const
 	help << "  -4, --ipv4               Force IPv4.\n";
 	help << "  -6, --ipv6               Force IPv6.\n\n";
 	help << "CLI mode refreshes continuously until Ctrl+C by default.\n";
-	help << "CLI reports include per-hop ASN lookup when available.\n";
 	WriteConsoleText(help.str().c_str());
 }
 
