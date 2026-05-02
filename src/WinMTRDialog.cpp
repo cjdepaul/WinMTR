@@ -408,7 +408,7 @@ WinMTRDialog::WinMTRDialog(CWnd* pParent)
 	
 	traceThreadMutex = CreateMutex(NULL, FALSE, NULL);
 	wmtrnet = new WinMTRNet(this);
-	useIPv6=2;
+	useIPv6=0;
 }
 
 WinMTRDialog::~WinMTRDialog()
