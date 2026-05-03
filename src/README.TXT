@@ -1,7 +1,7 @@
-WinMTR 2.0
+WinMTR 2.1
 ==========
 
-WinMTR 2.0 is a Windows network diagnostic tool that combines traceroute-style path discovery with continuous ping statistics.
+WinMTR 2.1 is a Windows network diagnostic tool that combines traceroute-style path discovery with continuous ping statistics.
 
 CLI examples:
 
@@ -12,6 +12,7 @@ CLI examples:
     WinMTR.exe --report-cycles 10 1.1.1.1
     WinMTR.exe --report-seconds 30 example.com
     WinMTR.exe --gui example.com
+    WinMTR.exe --json --report-cycles 10 example.com
 
 Run `WinMTR.exe --help` for all CLI options.
 

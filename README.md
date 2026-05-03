@@ -1,7 +1,7 @@
-WinMTR 2.0
+WinMTR 2.1
 ==========
 
-WinMTR 2.0 is a lightweight Windows network diagnostic tool that combines traceroute-style path discovery with continuous ping statistics.
+WinMTR 2.1 is a lightweight Windows network diagnostic tool that combines traceroute-style path discovery with continuous ping statistics.
 
 This version adds a practical command-line experience similar to Linux `mtr`, IPv4/IPv6 selection, and a native Windows GUI with system-following dark mode.
 
@@ -14,6 +14,8 @@ This version adds a practical command-line experience similar to Linux `mtr`, IP
 - GUI mode for classic WinMTR usage
 - Native Windows light/dark appearance for the GUI
 - Text and HTML export support
+- JSON output for CLI results
+- Standard deviation calculation for latency measurements
 
 ## Requirements
 
@@ -79,7 +81,8 @@ src\Release_x64\WinMTR.exe
 - [mtr](https://github.com/traviscross/mtr) by Travis Cross and contributors
 - [WinMTR Official](https://github.com/WinMTR/WinMTR-Official), the Windows port by Dragos Manac
 - [WinMTR Redux](https://github.com/White-Tiger/WinMTR), with IPv6 support extended by White-Tiger
+- [WinMTR 2.0](https://github.com/AD2011/WinMTR), by Abir Dey with CLI support and GUI improvements
 
 ## License
 
-WinMTR 2.0 is distributed under the GNU General Public License version 2. See [LICENSE](LICENSE).
+WinMTR 2.1 is distributed under the GNU General Public License version 2. See [LICENSE](LICENSE).
