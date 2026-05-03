@@ -494,51 +494,9 @@ void WinMTRNet::SetName(int at, char* n)
 
 void WinMTRNet::SetErrorName(int at, DWORD errnum)
 {
-	const char* name;
-	switch(errnum) {
-	case IP_BUF_TOO_SMALL:
-		name="Reply buffer too small."; break;
-	case IP_DEST_NET_UNREACHABLE:
-		name="Destination network unreachable."; break;
-	case IP_DEST_HOST_UNREACHABLE:
-		name="Destination host unreachable."; break;
-	case IP_DEST_PROT_UNREACHABLE:
-		name="Destination protocol unreachable."; break;
-	case IP_DEST_PORT_UNREACHABLE:
-		name="Destination port unreachable."; break;
-	case IP_NO_RESOURCES:
-		name="Insufficient IP resources were available."; break;
-	case IP_BAD_OPTION:
-		name="Bad IP option was specified."; break;
-	case IP_HW_ERROR:
-		name="Hardware error occurred."; break;
-	case IP_PACKET_TOO_BIG:
-		name="Packet was too big."; break;
-	case IP_REQ_TIMED_OUT:
-		name="Request timed out."; break;
-	case IP_BAD_REQ:
-		name="Bad request."; break;
-	case IP_BAD_ROUTE:
-		name="Bad route."; break;
-	case IP_TTL_EXPIRED_REASSEM:
-		name="The time to live expired during fragment reassembly."; break;
-	case IP_PARAM_PROBLEM:
-		name="Parameter problem."; break;
-	case IP_SOURCE_QUENCH:
-		name="Datagrams are arriving too fast to be processed and datagrams may have been discarded."; break;
-	case IP_OPTION_TOO_BIG:
-		name="An IP option was too big."; break;
-	case IP_BAD_DESTINATION:
-		name="Bad destination."; break;
-	case IP_GENERAL_FAILURE:
-		name="General failure."; break;
-	default:
-		TRACE_MSG("==UNKNOWN ERROR== " << errnum);
-		name="Unknown error! (please report)"; break;
-	}
 	WaitForSingleObject(ghMutex, INFINITE);
 	if(!*host[at].name)
-		strcpy_s(host[at].name, sizeof(host[at].name), name);
+		strcpy_s(host[at].name, sizeof(host[at].name), "???");
 	ReleaseMutex(ghMutex);
 }
 
