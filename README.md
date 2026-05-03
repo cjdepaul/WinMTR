@@ -5,6 +5,8 @@ WinMTR 2.1 is a lightweight Windows network diagnostic tool that combines tracer
 
 This version adds a practical command-line experience similar to Linux `mtr`, IPv4/IPv6 selection, and a native Windows GUI with system-following dark mode.
 
+The goal of this version is to be closer to the original 'mtr' linux tools. This version removes some features that were added in WinMTR 2.0 to focus on resembling the original mtr CLI tool.
+
 ## Features
 
 - Live CLI mode by default when a target host is passed on the command line
