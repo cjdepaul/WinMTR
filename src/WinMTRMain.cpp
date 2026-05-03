@@ -7,6 +7,9 @@
 //
 //    -- versions 0.8
 //
+// - 05.02.2026 - Add JSON output and StdDev calculation (v2.1)
+// - 04.02.2026 - Added dark mode to GUI (v2.0)
+// - 03.31.2026 - Add CLI support (v2.0)
 // - 01.18.2002 - Store LRU hosts in registry (v0.8)
 // - 05.08.2001 - Replace edit box with combo box which hold last entered hostnames.
 //				  Fixed a memory leak which caused program to crash after a long
@@ -245,7 +248,7 @@ void WinMTRMain::WriteConsoleText(const char* text) const
 void WinMTRMain::PrintHelp() const
 {
 	std::ostringstream help;
-	help << "WinMTR 2.0 command line usage:\n";
+	help << "WinMTR 2.1 command line usage:\n";
 	help << "  WinMTR.exe [options] host\n\n";
 	help << "Options:\n";
 	help << "  -h, --help               Show this help text.\n";

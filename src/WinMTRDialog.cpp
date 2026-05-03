@@ -353,7 +353,7 @@ static std::string BuildCliScreen(WinMTRDialog* dialog, const char* hostname, in
 	}
 
 	screen << BuildCliSeparator('-');
-	screen << "   WinMTR 2.0 GPLv2\r\n\r\n";
+	screen << "   WinMTR 2.1 GPLv2\r\n\r\n";
 
 	if(durationSeconds > 0) {
 		screen << "Elapsed: " << (elapsedMs / 1000) << "s / " << durationSeconds << "s";
@@ -466,9 +466,9 @@ BOOL WinMTRDialog::OnInitDialog()
 	}
 	
 #ifndef  _WIN64
-	char caption[] = {"WinMTR 2.0 32bit"};
+	char caption[] = {"WinMTR 2.1 32bit"};
 #else
-	char caption[] = {"WinMTR 2.0 64bit"};
+	char caption[] = {"WinMTR 2.1 64bit"};
 #endif
 	
 	SetTimer(1, WINMTR_DIALOG_TIMER, NULL);
