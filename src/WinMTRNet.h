@@ -32,11 +32,11 @@ struct s_nethost {
 	};
 	int xmit;			// number of PING packets sent
 	int returned;		// number of ICMP echo replies received
-	unsigned long total;	// total time
-	int last;				// last time
-	int best;				// best time
-	int worst;			// worst time
-	int stddev;			// standard deviation
+	double total;		// total time
+	double last;		// last time
+	double best;		// best time
+	double worst;		// worst time
+	double stddev;		// standard deviation
 	char name[255];
 };
 
@@ -67,16 +67,16 @@ public:
 	void	StopTrace();
 	
 	sockaddr* GetAddr(int at);
-	int		GetName(int at, char* n, size_t nSize);
-	int		GetBest(int at);
-	int		GetWorst(int at);
-	int		GetAvg(int at);
-	int		GetPercent(int at);
-	int		GetLast(int at);
-	int		GetReturned(int at);
-	int		GetXmit(int at);
-	int		GetMax();
-	int     GetStdDev(int at);
+	int	GetName(int at, char* n, size_t nSize);
+	double	GetBest(int at);
+	double	GetWorst(int at);
+	double	GetAvg(int at);
+	int	GetPercent(int at);
+	double	GetLast(int at);
+	int	GetReturned(int at);
+	int	GetXmit(int at);
+	int	GetMax();
+	double    GetStdDev(int at);
 	
 	void	SetAddr(int at, u_long addr);
 	void	SetAddr6(int at, IPV6_ADDRESS_EX addrex);

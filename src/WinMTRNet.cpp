@@ -333,26 +333,26 @@ int WinMTRNet::GetName(int at, char* n, size_t nSize)
 	return 0;
 }
 
-int WinMTRNet::GetBest(int at)
+double WinMTRNet::GetBest(int at)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	int ret = host[at].best;
+	double ret = host[at].best;
 	ReleaseMutex(ghMutex);
 	return ret;
 }
 
-int WinMTRNet::GetWorst(int at)
+double WinMTRNet::GetWorst(int at)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	int ret = host[at].worst;
+	double ret = host[at].worst;
 	ReleaseMutex(ghMutex);
 	return ret;
 }
 
-int WinMTRNet::GetAvg(int at)
+double WinMTRNet::GetAvg(int at)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	int ret = host[at].returned == 0 ? 0 : host[at].total / host[at].returned;
+	double ret = host[at].returned == 0 ? 0.0 : host[at].total / (double)host[at].returned;
 	ReleaseMutex(ghMutex);
 	return ret;
 }
@@ -365,10 +365,10 @@ int WinMTRNet::GetPercent(int at)
 	return ret;
 }
 
-int WinMTRNet::GetLast(int at)
+double WinMTRNet::GetLast(int at)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	int ret = host[at].last;
+	double ret = host[at].last;
 	ReleaseMutex(ghMutex);
 	return ret;
 }
@@ -409,15 +409,16 @@ int WinMTRNet::GetMax()
 	return max;
 }
 
-int WinMTRNet::GetStdDev(int at)
+double WinMTRNet::GetStdDev(int at)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	int avg = host[at].returned == 0 ? 0 : host[at].total / host[at].returned;
-	int sumSqDiff = 0;
+	double avg = host[at].returned == 0 ? 0.0 : host[at].total / (double)host[at].returned;
+	double sumSqDiff = 0.0;
 	for(int i = 0; i < host[at].xmit; ++i) {
-		sumSqDiff += (host[at].last - avg) * (host[at].last - avg);
+		double diff = (host[at].last - avg);
+		sumSqDiff += diff * diff;
 	}
-	int stddev = (host[at].returned > 1) ? static_cast<int>(sqrt(sumSqDiff / (host[at].returned - 1))) : 0;
+	double stddev = (host[at].returned > 1) ? sqrt(sumSqDiff / (double)(host[at].returned - 1)) : 0.0;
 	ReleaseMutex(ghMutex);
 	return stddev;
 }
@@ -524,12 +525,12 @@ void WinMTRNet::SetErrorName(int at, DWORD errnum)
 void WinMTRNet::UpdateRTT(int at, int rtt)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	host[at].last=rtt;
-	host[at].total+=rtt;
-	if(host[at].best>rtt || host[at].xmit==1)
-		host[at].best=rtt;
-	if(host[at].worst<rtt)
-		host[at].worst=rtt;
+	host[at].last = (double)rtt;
+	host[at].total += (double)rtt;
+	if(host[at].best > (double)rtt || host[at].xmit == 1)
+		host[at].best = (double)rtt;
+	if(host[at].worst < (double)rtt)
+		host[at].worst = (double)rtt;
 	ReleaseMutex(ghMutex);
 }
 
