@@ -86,14 +86,13 @@
 #define IP_HEADER_LENGTH   20
 
 
-#define MTR_NR_COLS 9
+#define MTR_NR_COLS 8
 
 const char MTR_COLS[ MTR_NR_COLS ][10] = {
 	"Hostname",
 	"Nr",
 	"Loss %",
 	"Sent",
-	"Recv",
 	"Best",
 	"Avrg",
 	"Worst",
@@ -101,7 +100,7 @@ const char MTR_COLS[ MTR_NR_COLS ][10] = {
 };
 
 const int MTR_COL_LENGTH[ MTR_NR_COLS ] = {
-	249, 30, 50, 40, 40, 50, 50, 50, 50
+	249, 30, 50, 40, 50, 50, 50, 50
 };
 
 struct WinMTRThemeColors {

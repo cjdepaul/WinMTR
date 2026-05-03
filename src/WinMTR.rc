@@ -140,8 +140,7 @@ BEGIN
     GROUPBOX        "Ping time",IDC_STATIC,147,74,86,60,BS_FLAT
     GROUPBOX        "Host",IDC_STATIC,7,7,267,62,BS_FLAT
     LTEXT           "Loss (%):",IDC_STATIC,52,117,31,9
-    LTEXT           "Received:",IDC_STATIC,52,101,36,9
-    LTEXT           "Sent:",IDC_STATIC,52,85,21,9
+    LTEXT           "Snt:",IDC_STATIC,52,85,21,9
     LTEXT           "Last:",IDC_STATIC,153,84,18,9
     LTEXT           "Best:",IDC_STATIC,153,96,20,8
     LTEXT           "Average:",IDC_STATIC,153,107,32,8

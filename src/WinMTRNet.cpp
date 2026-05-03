@@ -52,6 +52,12 @@ static int GetSockaddrLength(const sockaddr* addr)
 	return addr->sa_family == AF_INET6 ? sizeof(sockaddr_in6) : sizeof(sockaddr_in);
 }
 
+static double QueryElapsedMilliseconds(const LARGE_INTEGER& start, const LARGE_INTEGER& end, const LARGE_INTEGER& frequency)
+{
+	if(frequency.QuadPart == 0) return 0.0;
+	return (double)(end.QuadPart - start.QuadPart) * 1000.0 / (double)frequency.QuadPart;
+}
+
 static void InterruptibleTraceSleep(WinMTRNet* winmtr, DWORD milliseconds)
 {
 	const DWORD sliceMs = 25;
@@ -234,14 +240,21 @@ unsigned WINAPI TraceThread(void* p)
 		// - as soon as we get a hop, we start pinging directly that hop, with a greater TTL
 		// - a drawback would be that, some servers are configured to reply for TTL transit expire, but not to ping requests, so,
 		// for these servers we'll have 100% loss
+		LARGE_INTEGER qpcStart = {0};
+		LARGE_INTEGER qpcEnd = {0};
+		LARGE_INTEGER qpcFrequency = {0};
+		QueryPerformanceFrequency(&qpcFrequency);
+		QueryPerformanceCounter(&qpcStart);
 		DWORD dwReplyCount = wmtrnet->lpfnIcmpSendEcho2(wmtrnet->hICMP, 0,NULL,NULL, current->address, achReqData, nDataLen, lpstIPInfo, achRepData, sizeof(achRepData), ECHO_REPLY_TIMEOUT);
+		QueryPerformanceCounter(&qpcEnd);
 		wmtrnet->AddXmit(current->ttl - 1);
 		if(dwReplyCount) {
+			double elapsedMs = QueryElapsedMilliseconds(qpcStart, qpcEnd, qpcFrequency);
 			TRACE_MSG("TTL " << (int)current->ttl << " reply TTL " << (int)icmp_echo_reply.Options.Ttl << " Status " << icmp_echo_reply.Status << " Reply count " << dwReplyCount);
 			switch(icmp_echo_reply.Status) {
 			case IP_SUCCESS:
 			case IP_TTL_EXPIRED_TRANSIT:
-				wmtrnet->UpdateRTT(current->ttl - 1, icmp_echo_reply.RoundTripTime);
+				wmtrnet->UpdateRTT(current->ttl - 1, elapsedMs);
 				wmtrnet->AddReturned(current->ttl - 1);
 				wmtrnet->SetAddr(current->ttl - 1, icmp_echo_reply.Address);
 				break;
@@ -289,14 +302,21 @@ unsigned WINAPI TraceThread6(void* p)
 	for(int i=0; i<nDataLen; ++i) achReqData[i]=32;//whitespaces
 	while(wmtrnet->tracing) {
 		if(current->ttl > wmtrnet->GetMax()) break;
+		LARGE_INTEGER qpcStart = {0};
+		LARGE_INTEGER qpcEnd = {0};
+		LARGE_INTEGER qpcFrequency = {0};
+		QueryPerformanceFrequency(&qpcFrequency);
+		QueryPerformanceCounter(&qpcStart);
 		DWORD dwReplyCount = wmtrnet->lpfnIcmp6SendEcho2(wmtrnet->hICMP6, 0,NULL,NULL, &sockaddrfrom, &current->address, achReqData, nDataLen, lpstIPInfo, achRepData, sizeof(achRepData), ECHO_REPLY_TIMEOUT);
+		QueryPerformanceCounter(&qpcEnd);
 		wmtrnet->AddXmit(current->ttl - 1);
 		if(dwReplyCount) {
+			double elapsedMs = QueryElapsedMilliseconds(qpcStart, qpcEnd, qpcFrequency);
 			TRACE_MSG("TTL " << (int)current->ttl << " Status " << icmpv6_echo_reply.Status << " Reply count " << dwReplyCount);
 			switch(icmpv6_echo_reply.Status) {
 			case IP_SUCCESS:
 			case IP_TTL_EXPIRED_TRANSIT:
-				wmtrnet->UpdateRTT(current->ttl - 1, icmpv6_echo_reply.RoundTripTime);
+				wmtrnet->UpdateRTT(current->ttl - 1, elapsedMs);
 				wmtrnet->AddReturned(current->ttl - 1);
 				wmtrnet->SetAddr6(current->ttl - 1, icmpv6_echo_reply.Address);
 				break;
@@ -333,26 +353,26 @@ int WinMTRNet::GetName(int at, char* n, size_t nSize)
 	return 0;
 }
 
-int WinMTRNet::GetBest(int at)
+double WinMTRNet::GetBest(int at)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	int ret = host[at].best;
+	double ret = host[at].best;
 	ReleaseMutex(ghMutex);
 	return ret;
 }
 
-int WinMTRNet::GetWorst(int at)
+double WinMTRNet::GetWorst(int at)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	int ret = host[at].worst;
+	double ret = host[at].worst;
 	ReleaseMutex(ghMutex);
 	return ret;
 }
 
-int WinMTRNet::GetAvg(int at)
+double WinMTRNet::GetAvg(int at)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	int ret = host[at].returned == 0 ? 0 : host[at].total / host[at].returned;
+	double ret = host[at].returned == 0 ? 0.0 : host[at].total / (double)host[at].returned;
 	ReleaseMutex(ghMutex);
 	return ret;
 }
@@ -365,10 +385,10 @@ int WinMTRNet::GetPercent(int at)
 	return ret;
 }
 
-int WinMTRNet::GetLast(int at)
+double WinMTRNet::GetLast(int at)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	int ret = host[at].last;
+	double ret = host[at].last;
 	ReleaseMutex(ghMutex);
 	return ret;
 }
@@ -409,15 +429,16 @@ int WinMTRNet::GetMax()
 	return max;
 }
 
-int WinMTRNet::GetStdDev(int at)
+double WinMTRNet::GetStdDev(int at)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	int avg = host[at].returned == 0 ? 0 : host[at].total / host[at].returned;
-	int sumSqDiff = 0;
+	double avg = host[at].returned == 0 ? 0.0 : host[at].total / (double)host[at].returned;
+	double sumSqDiff = 0.0;
 	for(int i = 0; i < host[at].xmit; ++i) {
-		sumSqDiff += (host[at].last - avg) * (host[at].last - avg);
+		double diff = (host[at].last - avg);
+		sumSqDiff += diff * diff;
 	}
-	int stddev = (host[at].returned > 1) ? static_cast<int>(sqrt(sumSqDiff / (host[at].returned - 1))) : 0;
+	double stddev = (host[at].returned > 1) ? sqrt(sumSqDiff / (double)(host[at].returned - 1)) : 0.0;
 	ReleaseMutex(ghMutex);
 	return stddev;
 }
@@ -473,63 +494,21 @@ void WinMTRNet::SetName(int at, char* n)
 
 void WinMTRNet::SetErrorName(int at, DWORD errnum)
 {
-	const char* name;
-	switch(errnum) {
-	case IP_BUF_TOO_SMALL:
-		name="Reply buffer too small."; break;
-	case IP_DEST_NET_UNREACHABLE:
-		name="Destination network unreachable."; break;
-	case IP_DEST_HOST_UNREACHABLE:
-		name="Destination host unreachable."; break;
-	case IP_DEST_PROT_UNREACHABLE:
-		name="Destination protocol unreachable."; break;
-	case IP_DEST_PORT_UNREACHABLE:
-		name="Destination port unreachable."; break;
-	case IP_NO_RESOURCES:
-		name="Insufficient IP resources were available."; break;
-	case IP_BAD_OPTION:
-		name="Bad IP option was specified."; break;
-	case IP_HW_ERROR:
-		name="Hardware error occurred."; break;
-	case IP_PACKET_TOO_BIG:
-		name="Packet was too big."; break;
-	case IP_REQ_TIMED_OUT:
-		name="Request timed out."; break;
-	case IP_BAD_REQ:
-		name="Bad request."; break;
-	case IP_BAD_ROUTE:
-		name="Bad route."; break;
-	case IP_TTL_EXPIRED_REASSEM:
-		name="The time to live expired during fragment reassembly."; break;
-	case IP_PARAM_PROBLEM:
-		name="Parameter problem."; break;
-	case IP_SOURCE_QUENCH:
-		name="Datagrams are arriving too fast to be processed and datagrams may have been discarded."; break;
-	case IP_OPTION_TOO_BIG:
-		name="An IP option was too big."; break;
-	case IP_BAD_DESTINATION:
-		name="Bad destination."; break;
-	case IP_GENERAL_FAILURE:
-		name="General failure."; break;
-	default:
-		TRACE_MSG("==UNKNOWN ERROR== " << errnum);
-		name="Unknown error! (please report)"; break;
-	}
 	WaitForSingleObject(ghMutex, INFINITE);
 	if(!*host[at].name)
-		strcpy_s(host[at].name, sizeof(host[at].name), name);
+		strcpy_s(host[at].name, sizeof(host[at].name), "???");
 	ReleaseMutex(ghMutex);
 }
 
-void WinMTRNet::UpdateRTT(int at, int rtt)
+void WinMTRNet::UpdateRTT(int at, double rtt)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	host[at].last=rtt;
-	host[at].total+=rtt;
-	if(host[at].best>rtt || host[at].xmit==1)
-		host[at].best=rtt;
-	if(host[at].worst<rtt)
-		host[at].worst=rtt;
+	host[at].last = rtt;
+	host[at].total += rtt;
+	if(host[at].best > rtt || host[at].xmit == 1)
+		host[at].best = rtt;
+	if(host[at].worst < rtt)
+		host[at].worst = rtt;
 	ReleaseMutex(ghMutex);
 }
 
