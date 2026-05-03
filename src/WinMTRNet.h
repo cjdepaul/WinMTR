@@ -82,7 +82,7 @@ public:
 	void	SetAddr6(int at, IPV6_ADDRESS_EX addrex);
 	void	SetName(int at, char* n);
 	void	SetErrorName(int at,DWORD errnum);
-	void	UpdateRTT(int at, int rtt);
+	void	UpdateRTT(int at, double rtt);
 	void	AddReturned(int at);
 	void	AddXmit(int at);
 	

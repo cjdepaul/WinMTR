@@ -52,6 +52,12 @@ static int GetSockaddrLength(const sockaddr* addr)
 	return addr->sa_family == AF_INET6 ? sizeof(sockaddr_in6) : sizeof(sockaddr_in);
 }
 
+static double QueryElapsedMilliseconds(const LARGE_INTEGER& start, const LARGE_INTEGER& end, const LARGE_INTEGER& frequency)
+{
+	if(frequency.QuadPart == 0) return 0.0;
+	return (double)(end.QuadPart - start.QuadPart) * 1000.0 / (double)frequency.QuadPart;
+}
+
 static void InterruptibleTraceSleep(WinMTRNet* winmtr, DWORD milliseconds)
 {
 	const DWORD sliceMs = 25;
@@ -234,14 +240,21 @@ unsigned WINAPI TraceThread(void* p)
 		// - as soon as we get a hop, we start pinging directly that hop, with a greater TTL
 		// - a drawback would be that, some servers are configured to reply for TTL transit expire, but not to ping requests, so,
 		// for these servers we'll have 100% loss
+		LARGE_INTEGER qpcStart = {0};
+		LARGE_INTEGER qpcEnd = {0};
+		LARGE_INTEGER qpcFrequency = {0};
+		QueryPerformanceFrequency(&qpcFrequency);
+		QueryPerformanceCounter(&qpcStart);
 		DWORD dwReplyCount = wmtrnet->lpfnIcmpSendEcho2(wmtrnet->hICMP, 0,NULL,NULL, current->address, achReqData, nDataLen, lpstIPInfo, achRepData, sizeof(achRepData), ECHO_REPLY_TIMEOUT);
+		QueryPerformanceCounter(&qpcEnd);
 		wmtrnet->AddXmit(current->ttl - 1);
 		if(dwReplyCount) {
+			double elapsedMs = QueryElapsedMilliseconds(qpcStart, qpcEnd, qpcFrequency);
 			TRACE_MSG("TTL " << (int)current->ttl << " reply TTL " << (int)icmp_echo_reply.Options.Ttl << " Status " << icmp_echo_reply.Status << " Reply count " << dwReplyCount);
 			switch(icmp_echo_reply.Status) {
 			case IP_SUCCESS:
 			case IP_TTL_EXPIRED_TRANSIT:
-				wmtrnet->UpdateRTT(current->ttl - 1, icmp_echo_reply.RoundTripTime);
+				wmtrnet->UpdateRTT(current->ttl - 1, elapsedMs);
 				wmtrnet->AddReturned(current->ttl - 1);
 				wmtrnet->SetAddr(current->ttl - 1, icmp_echo_reply.Address);
 				break;
@@ -289,14 +302,21 @@ unsigned WINAPI TraceThread6(void* p)
 	for(int i=0; i<nDataLen; ++i) achReqData[i]=32;//whitespaces
 	while(wmtrnet->tracing) {
 		if(current->ttl > wmtrnet->GetMax()) break;
+		LARGE_INTEGER qpcStart = {0};
+		LARGE_INTEGER qpcEnd = {0};
+		LARGE_INTEGER qpcFrequency = {0};
+		QueryPerformanceFrequency(&qpcFrequency);
+		QueryPerformanceCounter(&qpcStart);
 		DWORD dwReplyCount = wmtrnet->lpfnIcmp6SendEcho2(wmtrnet->hICMP6, 0,NULL,NULL, &sockaddrfrom, &current->address, achReqData, nDataLen, lpstIPInfo, achRepData, sizeof(achRepData), ECHO_REPLY_TIMEOUT);
+		QueryPerformanceCounter(&qpcEnd);
 		wmtrnet->AddXmit(current->ttl - 1);
 		if(dwReplyCount) {
+			double elapsedMs = QueryElapsedMilliseconds(qpcStart, qpcEnd, qpcFrequency);
 			TRACE_MSG("TTL " << (int)current->ttl << " Status " << icmpv6_echo_reply.Status << " Reply count " << dwReplyCount);
 			switch(icmpv6_echo_reply.Status) {
 			case IP_SUCCESS:
 			case IP_TTL_EXPIRED_TRANSIT:
-				wmtrnet->UpdateRTT(current->ttl - 1, icmpv6_echo_reply.RoundTripTime);
+				wmtrnet->UpdateRTT(current->ttl - 1, elapsedMs);
 				wmtrnet->AddReturned(current->ttl - 1);
 				wmtrnet->SetAddr6(current->ttl - 1, icmpv6_echo_reply.Address);
 				break;
@@ -522,15 +542,15 @@ void WinMTRNet::SetErrorName(int at, DWORD errnum)
 	ReleaseMutex(ghMutex);
 }
 
-void WinMTRNet::UpdateRTT(int at, int rtt)
+void WinMTRNet::UpdateRTT(int at, double rtt)
 {
 	WaitForSingleObject(ghMutex, INFINITE);
-	host[at].last = (double)rtt;
-	host[at].total += (double)rtt;
-	if(host[at].best > (double)rtt || host[at].xmit == 1)
-		host[at].best = (double)rtt;
-	if(host[at].worst < (double)rtt)
-		host[at].worst = (double)rtt;
+	host[at].last = rtt;
+	host[at].total += rtt;
+	if(host[at].best > rtt || host[at].xmit == 1)
+		host[at].best = rtt;
+	if(host[at].worst < rtt)
+		host[at].worst = rtt;
 	ReleaseMutex(ghMutex);
 }
 
