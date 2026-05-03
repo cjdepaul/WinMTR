@@ -49,7 +49,6 @@ void WinMTRProperties::DoDataExchange(CDataExchange* pDX)
 
 	DDX_Control(pDX, IDC_EDIT_PLOSS, m_editLoss);
 	DDX_Control(pDX, IDC_EDIT_PSENT, m_editSent);
-	DDX_Control(pDX, IDC_EDIT_PRECV, m_editRecv);
 
 	DDX_Control(pDX, IDC_EDIT_PLAST, m_editLast);
 	DDX_Control(pDX, IDC_EDIT_PBEST, m_editBest);
@@ -79,8 +78,6 @@ BOOL WinMTRProperties::OnInitDialog()
 	m_editLoss.SetWindowText(buf);
 	sprintf_s(buf, sizeof(buf), "%d", pck_sent);
 	m_editSent.SetWindowText(buf);
-	sprintf_s(buf, sizeof(buf), "%d", pck_recv);
-	m_editRecv.SetWindowText(buf);
 
 	sprintf_s(buf, sizeof(buf), "%.1f", ping_last);
 	m_editLast.SetWindowText(buf);

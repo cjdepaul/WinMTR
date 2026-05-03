@@ -39,14 +39,12 @@ public:
 	float	ping_worst;
 
 	int		pck_sent;
-	int		pck_recv;
 	int		pck_loss;
 
 	CEdit	m_editHost,
 			m_editIP,
 			m_editComment,
 			m_editSent,
-			m_editRecv,
 			m_editLoss,
 			m_editLast,
 			m_editBest,
