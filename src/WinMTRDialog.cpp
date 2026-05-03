@@ -94,7 +94,7 @@ static std::string CenterCell(const std::string& value, size_t width)
 
 static std::string BuildCliSeparator(char fill)
 {
-	static const size_t widths[] = {57, 4, 4, 4, 4, 4, 4, 4, 5};
+	static const size_t widths[] = {57, 4, 4, 4, 8, 8, 8, 8, 9};
 	std::ostringstream row;
 	row << '|';
 	for(size_t i = 0; i < sizeof(widths) / sizeof(widths[0]); ++i) {
@@ -322,17 +322,17 @@ static std::string BuildCliScreen(WinMTRDialog* dialog, const char* hostname, in
 	screen << "WinMTR live report for " << hostname << "\r\n";
 	screen << "Press Ctrl+C to stop.\r\n\r\n";
 	screen << BuildCliSeparator('-');
-	screen << "| " << CenterCell("WinMTR statistics", 114) << " |\r\n";
+	screen << "| " << CenterCell("WinMTR statistics", 134) << " |\r\n";
 	screen << BuildCliSeparator('-');
 	screen << "| " << CenterCell("Host", 57)
 		   << " | " << CenterCell("%", 4)
 		   << " | " << CenterCell("Sent", 4)
 		   << " | " << CenterCell("Recv", 4)
-		   << " | " << CenterCell("Best", 4)
-		   << " | " << CenterCell("Avrg", 4)
-		   << " | " << CenterCell("Wrst", 4)
-		   << " | " << CenterCell("Last", 4)
-		   << " | " << CenterCell("StDev", 5)
+		   << " | " << CenterCell("Best", 8)
+		   << " | " << CenterCell("Avrg", 8)
+		   << " | " << CenterCell("Wrst", 8)
+		   << " | " << CenterCell("Last", 8)
+		   << " | " << CenterCell("StDev", 9)
 		   << " |\r\n";
 	screen << BuildCliSeparator('-');
 
@@ -1065,10 +1065,10 @@ std::string WinMTRDialog::BuildTextReport() const
 	std::ostringstream report;
 	int nh = wmtrnet->GetMax();
 
-	report << "|----------------------------------------------------------------------------------------------------------------|\r\n";
-	report << "|                                               WinMTR statistics                                                |\r\n";
-	report << "|                          Host                           - %  | Sent | Recv | Best | Avrg | Wrst | Last | StDev |\r\n";
-	report << "|---------------------------------------------------------|----|------|------|------|------|------|------|-------|\r\n";
+	report << "|------------------------------------------------------------------------------------------------------------------------------------|\r\n";
+	report << "|                                               WinMTR statistics                                                                    |\r\n";
+	report << "|                          Host                           - %  | Sent | Recv |   Best   |   Avrg   |   Wrst   |   Last   |   StDev   |\r\n";
+	report << "|---------------------------------------------------------|----|------|------|----------|----------|----------|----------|-----------|\r\n";
 
 	for(int i = 0; i < nh; ++i) {
 		wmtrnet->GetName(i, buf, sizeof(buf));
